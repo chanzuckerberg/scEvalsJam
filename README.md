@@ -1,7 +1,7 @@
 # scEvalsJam
 
 ### Date: June 12-June 14, 2024
-### Location: Welcome Sanger Institute Kingston, Cambridge, UK
+### Location: Welcome Sanger Institute Hinxton, Cambridge, UK
 
 
 ## Objectives
