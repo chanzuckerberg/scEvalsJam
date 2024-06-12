@@ -22,11 +22,13 @@ class MethodTransform:
         else:
             self.gpu = False
             
-    def process_data(self, method = None):
+    def process_data(self, method = None, sample_key = None, perturbation_key = None):
+        # Current preprocessing assumes that the data is not normalized or log-transformed
         if method is None:
             raise Exception("Please specify a method.")
         if method is "scgen":
-            pass
+            self.adata.obs["batch_key"] = self.adata.obs[sample_key]
+            self.adata.obs["labels_key"] = self.adata.obs[perturbation_key]
         elif method is "cpa":
             pass
         elif method is "chemcpa":
@@ -52,9 +54,9 @@ class MethodTransform:
         
     def anndata_to_tensor(self):
         if self.gpu is True:
-            self.adata.X = torch.tensor(self.adata.X).cuda()
+            self.adata.X = torch.Tensor(self.adata.X).cuda()
         else:
-            self.adata.X = torch.tensor(self.adata.X)
+            self.adata.X = torch.Tensor(self.adata.X)
     
     def return_anndata(self):
         return self.adata
