@@ -4,7 +4,7 @@ import pathlib
 import torch
 from typing import List
 
-from perturbevals.dataset import PerturbationDataset
+from perturbench.dataset import PerturbationDataset
 
 
 class PerturbationModel(ABC):

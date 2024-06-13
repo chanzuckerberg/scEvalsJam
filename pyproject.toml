@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "scevalsjam"
+name = "perturbench"
 version = "0.1.0"
 description = ""
 authors = ["Adam Boxall <ab70@sanger.ac.uk>"]
