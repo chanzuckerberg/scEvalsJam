@@ -1,0 +1,6 @@
+method: scgen
+test_size: 1
+test_split: false
+val_size: 0.3
+scenario_name: Scenario 1 scGen
+train_dataset: 

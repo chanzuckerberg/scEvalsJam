@@ -1,4 +1,5 @@
 import numpy as np 
+import pandas as pd
 from sklearn.model_selection import train_test_split
 
 class Scenarios:
@@ -77,16 +78,26 @@ class Scenario1(Scenarios):
         if 'dataset' not in self.adata_test.obs.columns:
             self.adata_test.obs['dataset'] = self.test_dataset
             
-    def split_test_train(self, adata, test_size, stratification_key):
-        # Extract the anndata obs dataframe with indices and convert to array
-        adata_arr = adata.obs.values
-        adata_indices = adata.obs.index.values
-        stratification_arr = adata.obs[stratification_key].values
+    def split_test_train(self, adata, test_size, stratification_key, train_split_key='train',
+                         test_split_key='test'):
+        # Perform the train-test split of the anndata object,
+        # stratifying by the perturbation key
+        X_train, X_test = train_test_split(
+            adata.obs.index.tolist(), 
+            test_size=test_size, 
+            random_state=self.seed, 
+            stratify=adata.obs[stratification_key].values.tolist())
+
+        # Subset annData objects based on the train and test indices
+        adata_train = adata[adata.obs.index.isin(X_train), :]
+        adata_test = adata[adata.obs.index.isin(X_test), :]
         
-        # Perform the train-test split
+        # Add split key to the anndata objects
+        adata_train.obs['split'] = train_split_key
+        adata_test.obs['split'] = test_split_key
         
-        # [Add test train split here]
-        
+        # Return the train and test datasets
+        return adata_train, adata_test
         
     def split_data(self):
         # Initialize seed for reproducibility
@@ -109,12 +120,22 @@ class Scenario1(Scenarios):
         
         # Split the train data into validation and training sets
         adata_train, adata_val = self.split_test_train(
-            self.adata_train, self.val_size, self.perturbation_key
+            self.adata_train, self.val_size, self.perturbation_key,
+            "train", "validation"
         )
         if self.split_test:
             adata_test, adata_heldout = self.split_test_train(
-                self.adata_test, self.test_size, self.perturbation_key
+                self.adata_test, self.test_size, self.perturbation_key,
+                "test", "heldout"
             )
+            
+        # Assert perturbations are equal between train, test and validation
+        assert np.all(adata_train.obs[self.perturbation_key].unique() == \
+                        adata_val.obs[self.perturbation_key].unique()), \
+            "Perturbations in training and validation datasets are not the same"
+        assert np.all(adata_train.obs[self.perturbation_key].unique() == \
+                        adata_test.obs[self.perturbation_key].unique()), \
+            "Perturbations in training and testing datasets are not the same"
 
         # Return the train, validation, and test datasets
         return adata_train, adata_val, adata_test
