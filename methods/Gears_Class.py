@@ -13,7 +13,7 @@ class Gears_ABC(Abstract):
 
         if model is None:
             # initiate gears from scratch
-            self.mode = None
+            self.model = None
         else:
             # we can load in the pretrained model
             if isinstance(model, str):
@@ -22,7 +22,7 @@ class Gears_ABC(Abstract):
 
 
     def train(self, anndata, split_obs, 
-                dataset_kws:dict={'batch_size'}, 
+                dataset_kws:dict={'batch_size':32, 'name':'test_data'}, 
                 model_kws:dict={}, 
                 train_kws:dict={}):
         """
@@ -53,7 +53,7 @@ class Gears_ABC(Abstract):
 
         pert_data = PertData('../datasets') # specific saved folder
         pert_data.new_data_process(dataset_name = dataset_kws['name'], adata = anndata) # specific dataset name and adata object
-        pert_data.load(data_path = f'../datasets/{dataset_kws['name']}') # load the processed data, the path is saved folder + dataset_name
+        pert_data.load(data_path = f"../datasets/{dataset_kws['name']}") # load the processed data, the path is saved folder + dataset_name
         pert_data.prepare_split(split = split_obs, seed = 1) # get data split with seed
         pert_data.get_dataloader(batch_size = batch_size, test_batch_size = batch_size) # prepare data loader
         
@@ -68,6 +68,8 @@ class Gears_ABC(Abstract):
             train_kws.pop('deivce');
 
         if self.model is None:
+            # if provide a model checkpoint
+
             gears_model = GEARS(pert_data, device = device, 
                         weight_bias_track = False, 
                         proj_name = 'pertnet', 
@@ -75,16 +77,22 @@ class Gears_ABC(Abstract):
             gears_model.model_initialize(**model_kws)
             gears_model.train(**train_kws)
             self.model = gears_model
-            gears_model.save_model('gears.ckpt')
+
+            # save the model
+            gears_model.save_model(f"{dataset_kws['name']}_gears.ckpt")
 
         else:
+            # if provide a model checkpoint
+
             gears_model = GEARS(pert_data, device = device, 
                         weight_bias_track = False, 
                         proj_name = 'pertnet', 
                         exp_name = 'pertnet')
             gears_model.load(self.model)
             self.model = gears_model
-            gears_model.save_model('gears.ckpt')
+
+            # save the model
+            gears_model.save_model(f"{dataset_kws['name']}_gears.ckpt")
 
 
 
