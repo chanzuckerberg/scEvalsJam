@@ -6,9 +6,10 @@ import torch
 class MethodTransform:
     """Method-specific transforms for processed perturbation data"""
     
-    def __init__(self, adata, gpu=False):
+    def __init__(self, adata, gpu=False, config=None):
         self.adata = adata
         self.gpu = gpu
+        self.config = config
         
         # Check anndata object 
         if not isinstance(adata, ann.AnnData):
@@ -23,12 +24,19 @@ class MethodTransform:
             self.gpu = False
             
     def process_data(self, method = None, celltype_key = None, perturbation_key = None):
+        # Parse the config for key parameters 
+        if self.config is not None:
+            hvg = self.config['hvg']
+            num_hvgs = self.config['num_hvgs']
+        
         # Current preprocessing assumes that the data is not normalized or log-transformed
         if method is None:
             raise Exception("Please specify a method.")
         if method is "scgen":
             self.adata.obs["batch_key"] = self.adata.obs[perturbation_key]
             self.adata.obs["labels_key"] = self.adata.obs[celltype_key]
+            if hvg is True:
+                sc.pp.highly_variable_genes(self.adata, n_top_genes = num_hvgs)
         elif method is "cpa":
             pass
         elif method is "chemcpa":
@@ -51,12 +59,6 @@ class MethodTransform:
             pass
         else:
             raise Exception("Method not found.")
-        
-    def anndata_to_tensor(self):
-        if self.gpu is True:
-            self.adata.X = torch.Tensor(self.adata.X).cuda()
-        else:
-            self.adata.X = torch.Tensor(self.adata.X)
     
     def return_anndata(self):
         # Note that some methods will require more than just returning
