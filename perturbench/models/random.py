@@ -6,8 +6,8 @@ from typing import List
 import uuid
 import os
 
-from perturbench import PerturbationModel
-from perturbench import PerturbationDataset
+from perturbench.models import PerturbationModel
+from perturbench.dataset import PerturbationDataset
 
 
 class RandomModel(PerturbationModel):

@@ -1,5 +1,5 @@
-from perturbench import PerturbationModel
-from perturbench import PerturbationDataset
+from perturbench.models import PerturbationModel
+from perturbench.dataset import PerturbationDataset
 import pathlib
 import scipy as sp
 import torch

@@ -1,4 +1,4 @@
-from .model import *
+from .model import PerturbationModel
 
-from .random import *
-from .scgen import *
+from .random import RandomModel
+from .scgen import scGenModel

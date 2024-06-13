@@ -1,3 +1,1 @@
-from .scenario import *
-
-from .in_distribution_prediction import *
+from .scenario import Scenario
