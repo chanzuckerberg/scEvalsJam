@@ -1,5 +1,4 @@
 import numpy as np 
-import pandas as pd 
 from sklearn.model_selection import train_test_split
 
 class Scenarios:
@@ -47,6 +46,7 @@ class Scenario1(Scenarios):
         # Load the config parameters
         self.method = self.config['method']
         self.test_size = self.config['test_size']
+        self.split_test = self.config['split_test']
         self.val_size = self.config['val_size']
         self.scenario_name = self.config['scenario_name']
         self.train_dataset = self.config['train_dataset']
@@ -84,10 +84,6 @@ class Scenario1(Scenarios):
         stratification_arr = adata.obs[stratification_key].values
         
         # Perform the train-test split
-        adata_arr_train, adata_arr_test = train_test_split(
-            adata_arr, test_size = test_size, train_size =  1-test_size, 
-            stratify = stratification_arr, shuffle=True, random_state=self.seed
-        )
         
         # [Add test train split here]
         
@@ -112,27 +108,15 @@ class Scenario1(Scenarios):
         ]
         
         # Split the train data into validation and training sets
-        adata_train_frame = self.adata_train.obs
-        adata_test_frame = self.adata_test.obs
-        
-        
-    
-        
-    
-    
-    
+        adata_train, adata_val = self.split_test_train(
+            self.adata_train, self.val_size, self.perturbation_key
+        )
+        if self.split_test:
+            adata_test, adata_heldout = self.split_test_train(
+                self.adata_test, self.test_size, self.perturbation_key
+            )
 
-class ScenarioSplits:
-    """Class for scenario-specific test-train splits"""
-    
-    def __init__(self, adata):
-        self.adata = adata
+        # Return the train, validation, and test datasets
+        return adata_train, adata_val, adata_test
         
-    def scenario_1(self, test_size, remove_genes):
         
-
-    def split_data(self, scenario = 1, test_size = 0.1, remove_genes = None):
-        if scenario == 1:
-            return self.scenario_1(test_size, remove_genes)
-        else:
-            pass
