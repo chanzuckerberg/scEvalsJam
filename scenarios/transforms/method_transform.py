@@ -22,13 +22,13 @@ class MethodTransform:
         else:
             self.gpu = False
             
-    def process_data(self, method = None, sample_key = None, perturbation_key = None):
+    def process_data(self, method = None, celltype_key = None, perturbation_key = None):
         # Current preprocessing assumes that the data is not normalized or log-transformed
         if method is None:
             raise Exception("Please specify a method.")
         if method is "scgen":
-            self.adata.obs["batch_key"] = self.adata.obs[sample_key]
-            self.adata.obs["labels_key"] = self.adata.obs[perturbation_key]
+            self.adata.obs["batch_key"] = self.adata.obs[perturbation_key]
+            self.adata.obs["labels_key"] = self.adata.obs[celltype_key]
         elif method is "cpa":
             pass
         elif method is "chemcpa":
