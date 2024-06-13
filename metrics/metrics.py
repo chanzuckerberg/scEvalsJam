@@ -81,8 +81,9 @@ class F1ScoreDistance(AbstractDistance):
         raise NotImplementedError("F1 score cannot be calculated from a pairwise distance matrix.")
 
 class ARIDistance(AbstractDistance):
-    def __init__(self) -> None:
+    def __init__(self, n_clusters=5) -> None:
         super().__init__()
+        self.n_clusters = n_clusters
         self.accepts_precomputed = False
 
     def __call__(self, X: np.ndarray, Y: np.ndarray, **kwargs) -> float:
