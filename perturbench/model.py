@@ -16,6 +16,9 @@ class PerturbationModel(ABC):
 
     @abstractmethod
     def train(self, data: PerturbationDataset) -> None:
+        
+        data = self.standardize_data(data)
+        
         pass
 
     @abstractmethod

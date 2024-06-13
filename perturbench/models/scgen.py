@@ -5,7 +5,7 @@ import scipy as sp
 import torch
 
 
-class ScGenModel(PerturbationModel):
+class scGenModel(PerturbationModel):
     def __init__(self, device: torch.cuda.device, **kwargs) -> None:
         pass
 
