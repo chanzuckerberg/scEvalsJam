@@ -1,149 +1,133 @@
-import pertpy as pt
+# Implementation of other metrics as extensions to pertpy package
+# Created by: Ang Li
+# Date: June 13, 2024
+
 import numpy as np
-from scipy import stats
-from scipy.spatial.distance import cosine
+from scipy.stats import entropy
+from sklearn.metrics import adjusted_rand_score, f1_score, mutual_info_score, fowlkes_mallows_score
+from sklearn.cluster import KMeans
+from pertpy.tools._distances._distances import AbstractDistance
 
-"""
-Authors:
-Shawn Fan
-Artur Dox
+metric_dict = {
+    "mse": pt.tools.Distance(metric="mse"),
+    "mae": pt.tools.Distance(metric="mean_absolute_error"),
+    "ks_test_distance": pt.tools.Distance(metric="ks_test"),
+    "edistance": pt.tools.Distance(metric="edistance"),
+    "cosine_distance": pt.tools.Distance(metric="cosine_distance"),
+    "pearson_distance": pt.tools.Distance(metric="pearson_distance"),
+    "euclidean_distance": pt.tools.Distance(metric="euclidean_distance"),
+    "classifier_proba": pt.tools.Distance(metric="classifier_proba"),
+    "kendalltau_distance": pt.tools.Distance(metric="kendalltau_distance"),
+    "spearman_distance": pt.tools.Distance(metric="spearman_distance"),
+    "wasserstein": pt.tools.Distance(metric="wasserstein"),
+    "sym_kldiv": pt.tools.Distance(metric="sym_kldiv"),
+    "bhattacharyya_distance": BhattacharyyaDistance(),
+    "jaccard_index": JaccardDistance(),
+    "F1_score": F1ScoreDistance(),
+    "adjusted_rand_index": ARIDistance(),
+    "mutual_information": MutualInformationDistance(),
+    "fowlkes_mallows_index": FowlkesMallowsDistance()
+}
 
-Source: 
-https://github.com/scverse/pertpy
-https://pertpy.readthedocs.io/en/latest/_modules/pertpy/tools/_distances/_distances.html#Distance
+class BhattacharyyaDistance(AbstractDistance):
+    def __init__(self) -> None:
+        super().__init__()
+        self.accepts_precomputed = False
 
-"""
+    def __call__(self, X: np.ndarray, Y: np.ndarray, **kwargs) -> float:
+        X_mean = X.mean(axis=0)
+        Y_mean = Y.mean(axis=0)
+        # Normalize the means to probability distributions
+        X_norm = X_mean / np.sum(X_mean)
+        Y_norm = Y_mean / np.sum(Y_mean)
+        BC = np.sum(np.sqrt(X_norm * Y_norm))
+        return -np.log(BC)
 
+    def from_precomputed(self, P: np.ndarray, idx: np.ndarray, **kwargs) -> float:
+        raise NotImplementedError("Bhattacharyya distance cannot be calculated from precomputed matrix directly.")
 
-def mse(X: np.array, Y: np.array) -> float:
-    """Mean squared distance between pseudobulk vectors (gene centroids).
+class JaccardDistance(AbstractDistance):
+    def __init__(self, threshold=0.5) -> None:
+        self.threshold = threshold
+        self.accepts_precomputed = True
+    
+    def __call__(self, X: np.ndarray, Y: np.ndarray, **kwargs) -> float:
+        X_binary = X.mean(axis=0) > self.threshold
+        Y_binary = Y.mean(axis=0) > self.threshold
+        intersection = np.logical_and(X_binary, Y_binary).sum(axis=0)
+        union = np.logical_or(X_binary, Y_binary).sum(axis=0)
+        # Convert Jaccard Index to distance
+        return 1 - np.mean(intersection / union)
+    
+    def from_precomputed(self, P: np.ndarray, idx: np.ndarray, **kwargs) -> float:
+        raise NotImplementedError("Jaccard distance cannot be calculated from precomputed matrix directly.")
 
-    ### Args:
-        - `X (np.array)`: ground truth
-        - `Y (np.array)`: predictions
-    """
-    Distance = pt.tools.Distance(metric="mse")
-    D = Distance(X, Y)
-    return D
+    
+class F1ScoreDistance(AbstractDistance):
+    def __init__(self, threshold=0.5) -> None:
+        self.threshold = threshold
+        self.accepts_precomputed = False
 
+    def __call__(self, X: np.ndarray, Y: np.ndarray, **kwargs) -> float:
+        # Binarize the gene expression data based on the threshold
+        X_binary = (X.mean(axis=0) > self.threshold).astype(int)
+        Y_binary = (Y.mean(axis=0) > self.threshold).astype(int)
+        # Calculate F1 Score
+        f1 = f1_score(Y_binary.flatten(), X_binary.flatten(), average='macro')
+        # 1 - F1 Score to represent distance
+        return 1 - f1
+    
+    def from_precomputed(self, P: np.ndarray, idx: np.ndarray, **kwargs) -> float:
+        raise NotImplementedError("F1 score cannot be calculated from a pairwise distance matrix.")
 
-def mae(X: np.array, Y: np.array) -> float:
-    """Absolute (Norm-1) distance between pseudobulk (gene centroids).
+class ARIDistance(AbstractDistance):
+    def __init__(self) -> None:
+        super().__init__()
+        self.accepts_precomputed = False
 
-    ### Args:
-        - `X (np.array)`: ground truth
-        - `Y (np.array)`: predictions
-    """
-    Distance = pt.tools.Distance(metric="mean_absolute_error")
-    D = Distance(X, Y)
-    return D
+    def __call__(self, X: np.ndarray, Y: np.ndarray, **kwargs) -> float:
+        # Clustering the data
+        kmeans_X = KMeans(n_clusters=self.n_clusters, random_state=42)
+        kmeans_Y = KMeans(n_clusters=self.n_clusters, random_state=42)
+        # Get the cluster labels from both predictions and ground truth
+        labels_X = kmeans_X.labels_
+        labels_Y = kmeans_Y.labels_
+        # Calculating ARI
+        ari_score = adjusted_rand_score(labels_X, labels_Y)
+        # Convert score to distance
+        return 1 - ari_score
 
+    def from_precomputed(self, P: np.ndarray, idx: np.ndarray, **kwargs) -> float:
+        raise NotImplementedError("ARI distance cannot be calculated from a pairwise distance matrix.")
 
-def euclidean_distance(X: np.array, Y: np.array) -> float:
-    """Euclidean distance between pseudobulk vectors (gene centroids).
+class MutualInformationDistance(AbstractDistance):
+    def __init__(self) -> None:
+        super().__init__()
+        self.accepts_precomputed = False
 
-    ### Args:
-        - `X (np.array)`: ground truth
-        - `Y (np.array)`: predictions
-    """
-    Distance = pt.tools.Distance(metric="euclidean")
-    D = Distance(X, Y)
-    return D
+    def __call__(self, X: np.ndarray, Y: np.ndarray, **kwargs) -> float:
+        x, y = X.mean(axis=0), Y.mean(axis=0)
+        return mutual_info_score(x, y)
 
+    def from_precomputed(self, P: np.ndarray, idx: np.ndarray, **kwargs) -> float:
+        raise NotImplementedError("Mutual Information cannot be calculated from a pairwise distance matrix.")
 
-def ks_test_distance(X: np.ndarray, Y: np.ndarray) -> float:
-    """Average of two-sided KS test statistic between two groups.
+class FowlkesMallowsDistance(AbstractDistance):
+    def __init__(self, n_clusters=5) -> None:
+        super().__init__()
+        self.n_clusters = n_clusters
+        self.accepts_precomputed = False
 
-    ### Args:
-        - `X (np.ndarray)`: ground truth
-        - `Y (np.ndarray)`: predictions
-    """
-    Distance = pt.tools.Distance(metric="ks_test")
-    D = Distance(X, Y)
-    return D
+    def __call__(self, X: np.ndarray, Y: np.ndarray, **kwargs) -> float:
+        # Cluster the data
+        kmeans_X = KMeans(n_clusters=self.n_clusters, random_state=42).fit(X)
+        kmeans_Y = KMeans(n_clusters=self.n_clusters, random_state=42).fit(Y)
+        # Get the cluster labels from both predictions and ground truth
+        labels_X = kmeans_X.labels_
+        labels_Y = kmeans_Y.labels_
+        # Calculate the Fowlkes-Mallows Index
+        fm_score = fowlkes_mallows_score(labels_X, labels_Y)
+        return 1 - fm_score  # Convert to distance
 
-
-def energy_distance(X: np.ndarray, Y: np.ndarray) -> float:
-    """
-    In essence, it is twice the mean pairwise distance between cells of two groups minus
-    the mean pairwise distance between cells within each group respectively. More information can
-    be found in `Peidli et al. (2023) <https://doi.org/10.1101/2022.08.20.504663>`__.
-
-    ### Args:
-        - `X (np.ndarray)`: _description_
-        - `Y (np.ndarray)`: _description_
-
-    ### Returns:
-        - `float`: _description_
-    """
-    Distance = pt.tools.Distance(metric="edistance")
-    D = Distance(X, Y)
-    return D
-
-
-def cosine_distance(X: np.array, Y: np.array) -> float:
-    """Cosine distance between pseudobulk vectors (gene centroids).
-
-    ### Args:
-        - `X (np.ndarray)`: control
-        - `Y (np.ndarray)`: perturbations
-    """
-    Distance = pt.tools.Distance(metric="cosine_distance")
-    D = Distance(X, Y)
-    return D
-
-
-def cosine_similarity(X: np.array, Y: np.array) -> float:
-    """Cosine similarity between pseudobulk vectors (gene centroids).
-
-    ### Args:
-        - `X (np.ndarray)`: control
-        - `Y (np.ndarray)`: perturbations
-    """
-    return cosine(X.mean(axis=0), Y.mean(axis=0))
-
-
-def pearson_distance(X: np.array, Y: np.array) -> float:
-    """Pearson distance between the means of cells from two groups.
-
-    ### Args:
-        - `X (np.ndarray)`: control
-        - `Y (np.ndarray)`: perturbations
-    """
-    Distance = pt.tools.Distance(metric="pearson_distance")
-    D = Distance(X, Y)
-    return D
-
-
-def pearson_correlation(X: np.array, Y: np.array) -> float:
-    """Pearson distance between the means of cells from two groups.
-
-    ### Args:
-        - `X (np.ndarray)`: control
-        - `Y (np.ndarray)`: perturbations
-    """
-    return stats.pearsonr(X.mean(axis=0), Y.mean(axis=0))[0]
-
-
-def r2_distance(X: np.array, Y: np.array) -> float:
-    """Coefficient of determination across genes between pseudobulk vectors (gene centroids).
-
-    ### Args:
-        - `X (np.ndarray)`: control
-        - `Y (np.ndarray)`: perturbations
-    """
-    Distance = pt.tools.Distance(metric="r2_distance")
-    D = Distance(X, Y)
-    return D
-
-
-def classifier_control_proba(X: np.array, Y: np.array) -> float:
-    """Average of the classification probability of the perturbation for a binary classifier.
-
-    ### Args:
-        - `X (np.ndarray)`: control
-        - `Y (np.ndarray)`: perturbations
-    """
-    Distance = pt.tools.Distance(metric="classifier_proba")
-    D = Distance(X, Y)
-    return D
+    def from_precomputed(self, P: np.ndarray, idx: np.ndarray, **kwargs) -> float:
+        raise NotImplementedError("Fowlkes-Mallows index cannot be calculated from a pairwise distance matrix.")
