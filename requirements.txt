@@ -1,0 +1,19 @@
+# This file may be used to create an environment using:
+# $ conda create --name <env> --file <this file>
+# platform: linux-64
+tqdm
+numpy
+gensim
+pandas
+scanpy
+pyarrow
+seaborn
+networkx
+jupyter
+ipywidgets
+matplotlib
+scikit-learn
+jupyter
+torch
+tensorboard
+torch-geometric
