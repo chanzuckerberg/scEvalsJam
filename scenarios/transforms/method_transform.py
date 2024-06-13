@@ -59,6 +59,8 @@ class MethodTransform:
             self.adata.X = torch.Tensor(self.adata.X)
     
     def return_anndata(self):
+        # Note that some methods will require more than just returning
+        # the anndata object (e.g. scPreGAN)
         return self.adata
     
     
