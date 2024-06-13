@@ -16,4 +16,11 @@ class PerturbationDataset:
         pass
 
     def perturbation(self) -> pd.Series:
+        """
+
+        :return:
+        y: pd.Series
+            Returns a pd.Series where None denotes the control condition, genetic perturbations
+            are encoded as "GENETIC:HUGO_SYMBOL" and small molecule perturbations are encoded as "CHEMICAL:CHEMBL".
+        """
         pass
