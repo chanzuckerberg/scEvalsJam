@@ -16,15 +16,11 @@ class PerturbationModel(ABC):
 
     @abstractmethod
     def train(self, data: PerturbationDataset) -> None:
-        
-        data = self.standardize_data(data)
-        
         pass
 
     @abstractmethod
     def predict(self, data: PerturbationDataset, perturbation: List[str]) -> sp.sparse.csr_matrix:
         """
-
         :param data:
             A PerturbationDataset where all cells are unperturbed (i.e. baseline), from which
             to make a prediction.
@@ -33,10 +29,6 @@ class PerturbationModel(ABC):
             are encoded as described in PerturbationDataset.
         :return:
         """
-
-        if any([x != "control" for x in data.perturbation]):
-            raise ValueError("Perturbation predictions must be made from control cells")
-
         pass
 
     @abstractmethod
