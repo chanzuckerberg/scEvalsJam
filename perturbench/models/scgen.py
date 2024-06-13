@@ -1,3 +1,6 @@
+import sys
+sys.path.append('/Workspace/Users/lm25@sanger.ac.uk/scEvalsJam')
+print(sys.path)
 from perturbench.models import PerturbationModel
 from perturbench.dataset import PerturbationDataset
 import pathlib
