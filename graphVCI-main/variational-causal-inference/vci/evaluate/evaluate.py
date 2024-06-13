@@ -6,6 +6,7 @@ import torch
 
 from ..utils.general_utils import unique_ind
 
+
 def evaluate(model, datasets, batch_size=None):
     """
     Measure quality metrics using `evaluate()` on the training, test, and
@@ -36,6 +37,7 @@ def evaluate(model, datasets, batch_size=None):
         }
     model.train()
     return evaluation_stats
+
 
 def evaluate_r2(model, dataset, dataset_control,
                 batch_size=None, min_samples=30):
@@ -81,7 +83,7 @@ def evaluate_r2(model, dataset, dataset_control,
                 num_eval = 0
                 yp = []
                 while num_eval < num:
-                    end = min(num_eval+batch_size, num)
+                    end = min(num_eval + batch_size, num)
                     out = model.predict(
                         genes_control[num_eval:end],
                         perts_control[num_eval:end],
@@ -98,14 +100,16 @@ def evaluate_r2(model, dataset, dataset_control,
                 yt_m = yt.mean(0)
 
                 yp_m = yp.mean(0)
-                mean_score_mean.append(r2_score(yt_m, yp_m))
-                mean_score_de_mean.append(r2_score(yt_m[de_idx], yp_m[de_idx]))
+                _yp_m, _yt_m = yp_m.cpu().numpy(), yt_m.cpu().numpy()
+                mean_score_mean.append(r2_score(_yt_m, _yp_m))
+                mean_score_de_mean.append(r2_score(_yt_m[de_idx], _yp_m[de_idx]))
                 if pert_category in pert_names_control_cats:
                     pert_idx = pert_names_control_cats[pert_category]
 
                     yp_r = yp_m + (genes_control[pert_idx] - yp[pert_idx]).mean(0)
-                    mean_score_robust.append(r2_score(yt_m, yp_r))
-                    mean_score_de_robust.append(r2_score(yt_m[de_idx], yp_r[de_idx]))
+                    _yp_r = yp_r.cpu().numpy()
+                    mean_score_robust.append(r2_score(_yt_m, _yp_r))
+                    mean_score_de_robust.append(r2_score(_yt_m[de_idx], _yp_r[de_idx]))
 
     return [
         np.mean(s) if len(s) else -1
@@ -114,6 +118,7 @@ def evaluate_r2(model, dataset, dataset_control,
             mean_score_de_mean, mean_score_de_robust
         ]
     ]
+
 
 #####################################################
 #                 CLASSIC EVALUATION                #
@@ -149,6 +154,7 @@ def evaluate_classic(model, datasets, batch_size=None):
     model.train()
     return evaluation_stats
 
+
 def evaluate_r2_classic(model, dataset, dataset_control, batch_size=None, min_samples=30):
     """
     `evaluate_r2` used in CPA
@@ -182,7 +188,7 @@ def evaluate_r2_classic(model, dataset, dataset_control, batch_size=None, min_sa
             num_eval = 0
             yp = []
             while num_eval < num:
-                end = min(num_eval+batch_size, num)
+                end = min(num_eval + batch_size, num)
                 out = model.predict(
                     genes_control[num_eval:end],
                     perts_control[num_eval:end],

@@ -18,6 +18,30 @@ if not sys.warnoptions:
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
+def my_process_adata(adata):
+    """ Processing for Norman dataset """
+    print("Adjusting dataset for Norman")
+    # Fields
+    fields = {}
+    adata.uns['fields'] = fields
+
+    # TODO: Randomly select a subset of genes to measure to reduce size
+    num_cols = min(adata.var.shape[0], 5000)
+    sampled_columns = np.random.choice(adata.var.shape[0], num_cols, replace=False)
+    adata = adata[:, sampled_columns]
+
+    # Perturbation column name
+    fields['perturbation'] = 'perturbation_name'
+
+    # Control value
+    adata.obs['control'] = (adata.obs['perturbation_name'] == 'control')
+
+    # Set dose to 1
+    adata.obs['dose'] = 1.0
+
+    return adata
+
+
 class Dataset:
     def __init__(
         self,
@@ -34,6 +58,8 @@ class Dataset:
     ):
         if type(data) == str:
             data = sc.read(data)
+
+        # data = my_process_adata(data)
 
         self.sample_cf = sample_cf
         self.cf_samples = cf_samples
@@ -190,7 +216,7 @@ class Dataset:
             data.obs["cov_pert_name"] = self.cov_pert
             print("Ranking genes for DE genes...")
             rank_genes_groups(data,
-                groupby="cov_pert_name", 
+                groupby="cov_pert_name",
                 reference="cov_name",
                 control_key=control_key)
         self.de_genes = data.uns["rank_genes_groups_cov"]
@@ -284,19 +310,19 @@ class SubDataset:
     def __len__(self):
         return len(self.genes)
 
-def load_dataset_splits(
-    data_path: str,
-    perturbation_key: str = "perturbation",
-    control_key: str = "control",
-    dose_key: str = "dose",
-    covariate_keys: Union[list, str] = "covariates",
-    split_key: str = "split",
-    sample_cf: bool = False,
-    return_dataset: bool = False,
-):
 
+def load_dataset_splits(
+        data_path: str,
+        perturbation_key: str = "perturbation",
+        control_key: str = "control",
+        dose_key: str = "dose",
+        covariate_keys: Union[list, str] = "covariates",
+        split_key: str = None,
+        sample_cf: bool = False,
+        return_dataset: bool = False,
+):
     dataset = Dataset(
-        data_path, perturbation_key, control_key, dose_key, covariate_keys, split_key, 
+        data_path, perturbation_key, control_key, dose_key, covariate_keys, split_key,
         sample_cf=sample_cf
     )
 
@@ -310,5 +336,6 @@ def load_dataset_splits(
         return splits, dataset
     else:
         return splits
+
 
 indx = lambda a, i: a[i] if a is not None else None

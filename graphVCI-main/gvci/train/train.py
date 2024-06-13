@@ -16,6 +16,7 @@ from vci.evaluate import evaluate, evaluate_classic
 from vci.utils.general_utils import initialize_logger, ljson
 from vci.utils.data_utils import data_collate
 
+
 def prepare(args, state_dict=None):
     """
     Instantiates autoencoder and dataset to run an experiment.
@@ -33,6 +34,7 @@ def prepare(args, state_dict=None):
     model = load_graphVCI(args, state_dict)
 
     return model, datasets
+
 
 def train(args):
     """
@@ -72,7 +74,7 @@ def train(args):
 
         for data in datasets["loader_tr"]:
             (genes, perts, cf_genes, cf_perts, covariates) = (
-            data[0], data[1], data[2], data[3], data[4:])
+                data[0], data[1], data[2], data[3], data[4:])
 
             minibatch_training_stats = model.update(
                 genes, perts, cf_genes, cf_perts, covariates

@@ -14,6 +14,7 @@ from vci.model.module import (
     MLP, NegativeBinomial, ZeroInflatedNegativeBinomial
 )
 
+
 #####################################################
 #                    MODEL SAVING                   #
 #####################################################
@@ -21,9 +22,9 @@ from vci.model.module import (
 def load_graphVCI(args, state_dict=None):
     device = (
         "cuda:" + str(args["gpu"])
-            if (not args["cpu"]) 
-                and torch.cuda.is_available() 
-            else 
+        if (not args["cpu"])
+           and torch.cuda.is_available()
+        else
         "cpu"
     )
 
@@ -49,35 +50,36 @@ def load_graphVCI(args, state_dict=None):
 
     return model
 
+
 #####################################################
 #                     MAIN MODEL                    #
 #####################################################
 
 class graphVCI(VCI):
     def __init__(
-        self,
-        graph_data,
-        num_outcomes,
-        num_treatments,
-        num_covariates,
-        embed_outcomes=True,
-        embed_treatments=False,
-        embed_covariates=True,
-        omega0=1.0,
-        omega1=2.0,
-        omega2=0.1,
-        mc_sample_size=3,
-        outcome_dist="normal",
-        dist_mode="match",
-        graph_mode="sparse",
-        encode_aggr="sum",
-        decode_aggr="dot",
-        node_grad=True,
-        edge_grad=True,
-        best_score=-1e3,
-        patience=5,
-        device="cuda",
-        hparams=""
+            self,
+            graph_data,
+            num_outcomes,
+            num_treatments,
+            num_covariates,
+            embed_outcomes=True,
+            embed_treatments=False,
+            embed_covariates=True,
+            omega0=1.0,
+            omega1=2.0,
+            omega2=0.1,
+            mc_sample_size=3,
+            outcome_dist="normal",
+            dist_mode="match",
+            graph_mode="sparse",
+            encode_aggr="sum",
+            decode_aggr="dot",
+            node_grad=True,
+            edge_grad=True,
+            best_score=-1e3,
+            patience=5,
+            device="cuda",
+            hparams=""
     ):
         # set hyperparameters
         self._set_g_hparams()
@@ -89,9 +91,9 @@ class graphVCI(VCI):
         self.edge_grad = edge_grad
 
         # make graph
-        if self.graph_mode == "dense": # row target, col source
+        if self.graph_mode == "dense":  # row target, col source
             output_adj_mode = "target_to_source"
-        elif self.graph_mode == "sparse": # first row souce, second row target
+        elif self.graph_mode == "sparse":  # first row souce, second row target
             output_adj_mode = "source_to_target"
         else:
             ValueError("graph_mode not recognized")
@@ -101,16 +103,17 @@ class graphVCI(VCI):
                 n_nodes=num_outcomes, n_features=self.g_hparams["graph_latent_dim"],
                 graph_mode=graph_mode, output_adj_mode=output_adj_mode,
                 add_self_loops=True)
+
         elif type(graph_data) == str:
             node_features, adjacency, edge_features = get_graph(graph=torch.load(graph_data),
-                n_nodes=num_outcomes, n_features=self.g_hparams["graph_latent_dim"],
-                graph_mode=graph_mode, output_adj_mode=output_adj_mode,
-                add_self_loops=True)
+                                                                n_nodes=num_outcomes, n_features=self.g_hparams["graph_latent_dim"],
+                                                                graph_mode=graph_mode, output_adj_mode=output_adj_mode,
+                                                                add_self_loops=True)
         else:
             node_features, adjacency, edge_features = get_graph(graph_data,
-                n_nodes=num_outcomes, n_features=self.g_hparams["graph_latent_dim"],
-                graph_mode=graph_mode, output_adj_mode=output_adj_mode,
-                add_self_loops=True)
+                                                                n_nodes=num_outcomes, n_features=self.g_hparams["graph_latent_dim"],
+                                                                graph_mode=graph_mode, output_adj_mode=output_adj_mode,
+                                                                add_self_loops=True)
         self.num_nodes, self.num_features = node_features.size()
         self.edge_dim = 1 if edge_features.dim() == 1 else edge_features.size(-1)
 
@@ -185,18 +188,18 @@ class graphVCI(VCI):
             treatments = self.treatments_embeddings(
                 treatments if treatments.shape[-1] == 1 else treatments.argmax(1))
         if self.embed_covariates:
-            covariates = [emb(covars if covars.shape[-1] == 1 else covars.argmax(1)) 
-                for covars, emb in zip(covariates, self.covariates_embeddings)
-            ]
+            covariates = [emb(covars if covars.shape[-1] == 1 else covars.argmax(1))
+                          for covars, emb in zip(covariates, self.covariates_embeddings)
+                          ]
 
         inputs = torch.cat([outcomes, treatments] + covariates, -1)
 
         if eval:
             return self.encoder_eval(inputs,
-                self.node_features, self.adjacency, self.edge_features, return_graph=True)
+                                     self.node_features, self.adjacency, self.edge_features, return_graph=True)
         else:
             return self.encoder(inputs,
-                self.node_features, self.adjacency, self.edge_features, return_graph=True)
+                                self.node_features, self.adjacency, self.edge_features, return_graph=True)
 
     def decode(self, latents, graph_latents, treatments):
         if self.embed_treatments:
@@ -214,9 +217,9 @@ class graphVCI(VCI):
             treatments = self.adv_treatments_emb(
                 treatments if treatments.shape[-1] == 1 else treatments.argmax(1))
         if self.embed_covariates:
-            covariates = [emb(covars if covars.shape[-1] == 1 else covars.argmax(1)) 
-                for covars, emb in zip(covariates, self.adv_covariates_emb)
-            ]
+            covariates = [emb(covars if covars.shape[-1] == 1 else covars.argmax(1))
+                          for covars, emb in zip(covariates, self.adv_covariates_emb)
+                          ]
 
         inputs = torch.cat([outcomes, treatments] + covariates, -1)
 
@@ -234,12 +237,12 @@ class graphVCI(VCI):
         return self.decode(latents, graph_latent, treatments)
 
     def predict(
-        self,
-        outcomes,
-        treatments,
-        cf_treatments,
-        covariates,
-        return_dist=False
+            self,
+            outcomes,
+            treatments,
+            cf_treatments,
+            covariates,
+            return_dist=False
     ):
         """
         Predict "what would have the gene expression `outcomes` been, had the
@@ -267,12 +270,12 @@ class graphVCI(VCI):
             return outcomes_dist.mean
 
     def generate(
-        self,
-        outcomes,
-        treatments,
-        cf_treatments,
-        covariates,
-        return_dist=False
+            self,
+            outcomes,
+            treatments,
+            cf_treatments,
+            covariates,
+            return_dist=False
     ):
         outcomes, treatments, cf_treatments, covariates = self.move_inputs(
             outcomes, treatments, cf_treatments, covariates
@@ -345,16 +348,16 @@ class graphVCI(VCI):
         )
         cf_latents_dist = self.distributionize(cf_latents_constr, dist="normal")
 
-        return (outcomes_dist_samp, cf_outcomes_out,latents_dist, cf_latents_dist)
+        return (outcomes_dist_samp, cf_outcomes_out, latents_dist, cf_latents_dist)
 
     def init_encoder(self):
         return Enc_graphVCI(
-            mlp_sizes=[self.outcome_dim+self.treatment_dim+self.covariate_dim]
-                + [self.hparams["encoder_width"]] * (self.hparams["encoder_depth"] - 1)
-                + [self.hparams["latent_dim"]],
+            mlp_sizes=[self.outcome_dim + self.treatment_dim + self.covariate_dim]
+                      + [self.hparams["encoder_width"]] * (self.hparams["encoder_depth"] - 1)
+                      + [self.hparams["latent_dim"]],
             gnn_sizes=[self.num_features]
-                + [self.g_hparams["graph_encoder_width"]] * (self.g_hparams["graph_encoder_depth"] - 1)
-                + [self.g_hparams["graph_latent_dim"]],
+                      + [self.g_hparams["graph_encoder_width"]] * (self.g_hparams["graph_encoder_depth"] - 1)
+                      + [self.g_hparams["graph_latent_dim"]],
             attention_heads=self.g_hparams["attention_heads"],
             edge_dim=self.edge_dim,
             aggr_heads=2,
@@ -362,11 +365,11 @@ class graphVCI(VCI):
             aggr_mode=self.encode_aggr,
             final_act="relu"
         )
-    
+
     def init_decoder(self):
         return Dec_graphVCI(
-            mlp_sizes=[self.hparams["latent_dim"]+self.treatment_dim]
-                + [self.hparams["decoder_width"]] * (self.hparams["decoder_depth"] - 1),
+            mlp_sizes=[self.hparams["latent_dim"] + self.treatment_dim]
+                      + [self.hparams["decoder_width"]] * (self.hparams["decoder_depth"] - 1),
             num_features=self.g_hparams["graph_latent_dim"],
             aggr_heads=self.num_dist_params,
             aggr_mode=self.decode_aggr
@@ -375,12 +378,12 @@ class graphVCI(VCI):
     def init_discriminator(self):
         return nn.Sequential(
             Enc_graphVCI(
-                mlp_sizes=[self.outcome_dim+self.treatment_dim+self.covariate_dim]
-                    + [self.hparams["discriminator_width"]] 
-                        * (self.hparams["discriminator_depth"] - 1),
+                mlp_sizes=[self.outcome_dim + self.treatment_dim + self.covariate_dim]
+                          + [self.hparams["discriminator_width"]]
+                          * (self.hparams["discriminator_depth"] - 1),
                 gnn_sizes=[self.num_features]
-                    + [self.g_hparams["graph_discriminator_width"]] 
-                        * (self.g_hparams["graph_discriminator_depth"] - 1),
+                          + [self.g_hparams["graph_discriminator_width"]]
+                          * (self.g_hparams["graph_discriminator_depth"] - 1),
                 attention_heads=self.g_hparams["attention_heads"],
                 edge_dim=self.edge_dim,
                 aggr_heads=1,
