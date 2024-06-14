@@ -2,7 +2,11 @@ from perturbench import PerturbationModel
 import numpy as np
 import os
 import biolord
-from ..utils import make_GO, get_map
+from ..utils import (
+    make_GO, get_map, bool2idx, repeat_n
+)
+import anndata as ad
+
 
 # -----------------------------------------------------------------------
 # Configuration
@@ -47,7 +51,10 @@ varying_arg = {
 # -----------------------------------------------------------------------
 
 class BioLord(PerturbationModel):
-    def __init__(self, adata, config = varying_arg):
+    def __init__(self, 
+                 adata : ad.AnnData, 
+                 config : dict = varying_arg,
+                 ):
         self.setup_config(config)
         self.validate_config()
 
@@ -59,11 +66,12 @@ class BioLord(PerturbationModel):
             model_name=self.config['model_name'],
             module_params=self.module_params,
             train_classifiers=False,
-            split_key=f"split_{self.config['split_id']}",
+            split_key=self.split_key,
         )
 
     def setup_config(self, varying_arg):
         self.config = varying_arg
+        self.split_key = f'split_{self.config["split_id"]}'
 
         self.module_params = {
             "attribute_nn_width":  varying_arg["attribute_nn_width"],
@@ -143,7 +151,6 @@ class BioLord(PerturbationModel):
         return adata
     
 
-
     def train(self):
         self.model.train(
             max_epochs=int(self.config["max_epochs"]),
@@ -156,64 +163,52 @@ class BioLord(PerturbationModel):
             enable_checkpointing=False
         )
 
+    # Outputs needed from preprocessing
+    # self.adata where cells of each perturbation have been averaged 
+    # should have split as obs key (where values can be train, val, test as string)
+
     def predict(self):
         # Define perturbations of interest
+        # All perturbations
         perts = self.adata.obs["condition"].cat.categories
 
+        # Pertubations which have been seen in training 
+        train_condition_perts = self.adata[self.adata.obs[self.split_key] == 'train'].obs["condition"].cat.categories
+        
+        # Get control and perturbed datasets
+        adata_control = self.adata[self.adata.obs["condition"] == "ctrl"]
+        dataset_control = self.model.get_dataset(adata_control)
+
+        dataset_reference = self.model.get_dataset(self.adata)
+
+        output_dict = {}
+
         for i, pert in enumerate(perts):
-            # bool_de = adata.var_names.isin(
-            #             np.array(adata.uns["top_non_zero_de_20"][name_map[pert]])
-            #         )
-            bool_de = adata.var_names
-            idx_de = bool2idx(bool_de)
-
-
             if pert in train_condition_perts:
-                idx_ref =  bool2idx(adata_single.obs["condition"] == pert)[0]
-
-
+                idx_ref =  bool2idx(self.adata_single.obs["condition"] == pert)[0]         
+                # for seen perturbations, get true gene expression
                 expression_pert = dataset_reference["X"][[idx_ref], :].mean(0).cpu().numpy()
-                test_preds_delta = expression_pert
+
+                output_dict[f'{pert}_true'] = expression_pert
 
             elif "ctrl" in pert:
-                # for control cells, predict expression for had been perturbed
-                idx_ref =  bool2idx(adata_single.obs["condition"] == pert)[0]
+                # for control cells, predict expression for if they had been perturbed
+                idx_ref =  bool2idx(self.adata_single.obs["condition"] == pert)[0]
                 expression_pert = dataset_reference["X"][[idx_ref], :].mean(0).cpu().numpy()
 
                 dataset_pred = dataset_control.copy()
-                dataset_pred[ordered_attributes_key] = repeat_n(dataset_reference[ordered_attributes_key][idx_ref, :], n_obs)
-                test_preds, _ = model.module.get_expression(dataset_pred)
+                dataset_pred[self.config["ordered_attributes_key"]] = repeat_n(dataset_reference[self.config["ordered_attributes_key"]][idx_ref, :], dataset_pred.shape[0])
+                test_preds, _ = self.model.module.get_expression(dataset_pred)
 
-                test_preds_delta = test_preds.cpu().numpy()
-
-            else:
-                expression_pert = df_doubleperts_expression[df_doubleperts_condition.isin([pert]), :]
-                test_preds_add = []
-                for p in pert.split("+"):
-                    if p in train_perts:
-                        test_predsp = df_singleperts_expression.values[df_single_pert_val.isin([p]), :]
-                        test_preds_add.append(test_predsp[0, :])
-                    else:
-                        idx_ref =  bool2idx(adata_single.obs["perts_name"].isin([p]))[0]
-
-                        dataset_pred = dataset_control.copy()
-                        dataset_pred[ordered_attributes_key] = repeat_n(dataset_reference[ordered_attributes_key][idx_ref, :], n_obs)
-                        test_preds, _ = model.module.get_expression(dataset_pred)
-                        test_preds_add.append(test_preds.cpu().numpy())
+                output_dict[f'{pert}_pred'] = test_preds.cpu().numpy()
 
 
-
-
-
-
-# test_metrics_biolord_delta[split_seed][ood_set], _ = compute_metrics_cpu(predictions_dict_delta, ctrl=ctrl)
-
-# test_metrics_biolord_delta_normalized[split_seed][ood_set] = {key_: val_ / no_perturb_subgroup[split_seed][ood_set][key_] for key_, val_ in test_metrics_biolord_delta[split_seed][ood_set].items()}
-
+        # Prepare output
         
 
 
 
+# TO IMPLEMENT
 
     # @classmethod
     # def load(self, adata, config):
@@ -224,10 +219,10 @@ class BioLord(PerturbationModel):
     #     )
     #     return model
         
-    def save(self):
-        output_dir_path=self.config["path"]["output_dir_path"]
-        output_file_name=self.config["path"]["output_file_name"]
-        self.adata.write(os.path.join(output_dir_path, output_file_name))
+    # def save(self):
+    #     output_dir_path=self.config["path"]["output_dir_path"]
+    #     output_file_name=self.config["path"]["output_file_name"]
+    #     self.adata.write(os.path.join(output_dir_path, output_file_name))
 
 
 

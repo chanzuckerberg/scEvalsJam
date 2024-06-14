@@ -3,6 +3,8 @@ import pickle
 from multiprocessing import Pool
 import pandas as pd
 from tqdm import tqdm
+import numpy as np
+import torch
 
 
 def get_GO_edge_list(args):
@@ -67,3 +69,23 @@ def get_map(pert, gene_list, df):
     tmp = pd.DataFrame(np.zeros(len(gene_list)), index=gene_list)
     tmp.loc[df[df.target == pert].source.values, :] = df[df.target == pert].importance.values[:, np.newaxis]
     return tmp.values.flatten()
+
+def bool2idx(x):
+    """
+    Returns the indices of the True-valued entries in a boolean array `x`
+    From https://github.com/nitzanlab/biolord_reproducibility/blob/main/utils/utils_perturbations.py
+    Accessed 14/06/2024
+    """
+    return np.where(x)[0]
+
+
+def repeat_n(x, n):
+    """combo_seen2
+    Returns an n-times repeated version of the Tensor x,
+    repetition dimension is axis 0
+    https://github.com/nitzanlab/biolord_reproducibility/
+    blob/main/utils/utils_perturbations.py
+    """
+    # copy tensor to device BEFORE replicating it n times
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    return x.to(device).view(1, -1).repeat(n, 1)
