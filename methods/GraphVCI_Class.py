@@ -84,8 +84,7 @@ class GraphVCI_ABC:
         graph_path = None
         train_model(anndata, graph_path, args=model_kws)
 
-
-    def eval(self, ctl_anndata, perts, graph_path=None, model=None):
+    def eval(self, anndata, perts, graph_path=None, model=None):
         if self.model is None and model is None:
             raise ValueError("Model not trained yet")
 
@@ -99,31 +98,40 @@ class GraphVCI_ABC:
 
             self.model = load_graphVCI(graph_data, args, state_dict=state_dict)
 
-        # Process model
+        # Only use control cells
+        ctl_mask = anndata.obs['perturbation_name'] == "control"
 
         # TODO: filtering
-        self._process_anndata(ctl_anndata)
+        self._process_anndata(anndata)
 
         ctl_datasets = load_dataset_splits(
-            ctl_anndata, covariate_keys=None, test_ratio=None,
+            anndata, covariate_keys=None, test_ratio=None,
             sample_cf=True,
         )['training']
 
-        genes_control = ctl_datasets.genes
-        perts_control = ctl_datasets.perturbations
+        # Extract data
+        genes_control = ctl_datasets.genes[ctl_mask]
+        perts_control = ctl_datasets.perturbations[ctl_mask]
         pert_vector = ctl_datasets.perts_dict[perts]
         pert_vectors = pert_vector.repeat(genes_control.size(0), 1)
         covars_control = [torch.ones([genes_control.size(0), 1])]  # Currently no fixed covariates
 
+        # print(f'{genes_control.shape = }, {perts_control.shape = }, {pert_vectors.shape = }, {covars_control[0].shape = }')
         # print(covars_control[0].shape)
         out = self.model.predict(
-            genes_control[:10],
-            perts_control[:10],
-            pert_vectors[:10],
-            [covar[:10] for covar in covars_control]
+            genes_control,
+            perts_control,
+            pert_vectors,
+            [covar for covar in covars_control]
         )
-        print(out)
-        print(out.shape)
+
+        out_anndata = anndata[anndata.obs['perturbation_name'] == "control"].copy()
+        out_anndata.X = out
+
+        # print(out_anndata.X)
+        # print(out_anndata.X.shape)
+
+        return out_anndata
 
     def _process_anndata(self, anndata):
         """ Process anndata, used for training and testing """
@@ -131,16 +139,15 @@ class GraphVCI_ABC:
         sc.pp.highly_variable_genes(anndata, n_top_genes=123, subset=True)
 
 
-
 if __name__ == "__main__":
     gcvi = GraphVCI_ABC()
     import scanpy as sc
 
     # anndata = sc.read("../graphVCI/graphs/marson_grn_128.pth")
-    anndata = sc.read("../1gene-norman.h5ad")
-    anndata = my_process_adata(anndata)
+    _anndata = sc.read("../1gene-norman.h5ad")
+    _anndata = my_process_adata(_anndata)
 
     # gcvi.train(anndata)
 
     model_save = torch.load("/home/maccyz/Documents/scEvalsJam/methods/artifacts2/saves/default_run_2024.06.14_16:12:13/model_seed=None_epoch=0.pt")
-    gcvi.eval(anndata, "control", None, model_save)
+    gcvi.eval(_anndata, "control", None, model_save)
