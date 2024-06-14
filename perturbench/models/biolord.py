@@ -131,7 +131,7 @@ class BioLord(PerturbationModel):
         
         pert_list.remove(control_key) if control_key in pert_list else None
 
-        df = make_GO(data_path, pert_list, data_name, num_workers=cores, save=True)
+        df = make_GO(outs_dir, pert_list, data_name, num_workers=cores, save=True)
         df = df[df['source'].isin(gene_list)]
         
         
