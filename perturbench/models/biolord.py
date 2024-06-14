@@ -1,8 +1,14 @@
 from perturbench import PerturbationModel
 import numpy as np
+import pandas as pd
+import scanpy as sc
+import anndata
+import warnings
 import os
 import biolord
 from ..utils import make_GO, get_map
+
+np.random.seed(42)
 
 # -----------------------------------------------------------------------
 # Configuration
@@ -103,44 +109,113 @@ class BioLord(PerturbationModel):
         pass
 
     @staticmethod
-    def preprocess(adata, config):
-        # adata.obs["perturbation_name"].replace({"control": "ctrl"}, inplace=True)
-        # adata.X = adata.layers['counts'].copy()
-        
-        ordered_attributes_key = config["ordered_attributes_key"]
-
-        # generate importance scores from go ontology
-
-        # Set up variables
+    def preprocess(
+        adata, 
+        config : dict,
+        data_name : str,
+        outs_dir : str,
+        pert_column : str,
+        control_key : str,
+    ):
+        # Assign variables
         cores = os.cpu_count()
-        pert_list = list(adata.obs[config['pert_column']].unique())
+        adata.obs["condition"] = adata.obs[pert_column].astype(str)
+        adata.obs["condition_name"] = adata.obs["condition"].astype(str)
+        adata.obs.loc[~(adata.obs['condition'] == control_key), 'condition_name'] = adata.obs.loc[~(adata.obs['condition'] == control_key), 'condition_name'] + '_pert'
+        adata.obs["condition"] = adata.obs["condition"].astype('category')
+        
+        
+        # generate importance scores from go ontology
+        pert_list = list(adata.obs[pert_column].unique())
         gene_list = list(adata.var_names)
-        pert_column = config['pert_column']
+        
+        pert_list.remove(control_key) if control_key in pert_list else None
 
-        df = make_GO(config['data_path'], pert_list, config['model_name'], num_workers=cores, save=True)
+        df = make_GO(data_path, pert_list, data_name, num_workers=cores, save=True)
         df = df[df['source'].isin(gene_list)]
-
+        
+        
         # create pert2neighbor
         pert2neighbor =  {i: get_map(i) for i in list(adata.obs[pert_column].cat.categories)}
         adata.uns["pert2neighbor"] = pert2neighbor
-
+        
+        
         # get importance scores relative to pertubations of interest
         pert2neighbor = np.asarray([val for val in adata.uns["pert2neighbor"].values()])
         keep_idx = pert2neighbor.sum(0) > 0
+        
+        
+        # create mapper and mean expression matrix
+        name_map = dict(adata.obs[["condition", "condition_name"]].drop_duplicates().values)
+        ctrl = np.asarray(adata[adata.obs["condition"].isin([control_key])].X.mean(0)).flatten()
+        df_perts_expression = pd.DataFrame(adata.X.A, index=adata.obs_names, columns=adata.var_names)
+        df_perts_expression["condition"] = adata.obs["condition"]
+        df_perts_expression = df_perts_expression.groupby(["condition"]).mean()
+        df_perts_expression = df_perts_expression.reset_index()
 
+        
+        #Currently not known how the format for multiple pertubations is.
 
-        # ... missing here
-        # unclear how much needs to be here vs unified
+        #Given this, assuming it will work in the following structure and make a "generalised" for loop instead of just boolean style which would work for only dealing with single pertubations.
+        
+        #Assumed structure data will be in:
+        
+        #- control : control
+        #- PertA : single pertubation
+        #- PertA+PertB : dual pertubation
+        
+        # loop through to define lists of pertubations and values
+        single_pert_val = []
+        single_perts_condition = []
 
+        dual_pert_val = []
+        dual_perts_condition = []
+
+        for pert in adata.obs["condition"].cat.categories:
+
+          # control
+            if pert == control_key:
+                pass
+
+          # single pertubation
+            elif "+" not in pert:
+                single_pert_val.append(pert)
+                single_perts_condition.append(f'{pert}_pert')
+
+          # dual pertubation
+            elif "+" in pert:
+                dual_pert_val.append(pert)
+                dual_perts_condition.append(f'{pert}_pert')
+
+            else:
+                raise NameError(f"The key {pert} doesn't form to the expected structure, please review value or structure!")
+
+        # add control to single pert
+        single_perts_condition.append(control_key)
+        single_pert_val.append(control_key)
+        
+        
+        # create the components for the anndata pertubations construction
+        sliced_dict = {k: v for k, v in name_map.items() if v in single_perts_condition}
+        df_singleperts_expression = pd.DataFrame(df_perts_expression.set_index("condition").loc[list(sliced_dict.keys())], index = single_pert_val)
+        df_singleperts_condition = pd.Index(single_perts_condition)
+        df_single_pert_val = pd.Index(single_pert_val)
+        df_singleperts_emb = np.asarray([adata.uns["pert2neighbor"][p1][keep_idx] for p1 in df_singleperts_expression.index])
+        
+        adata_single = anndata.AnnData(X=df_singleperts_expression.values, var=adata.var.copy(), dtype=df_singleperts_expression.values.dtype)
+        adata_single.obs_names = df_singleperts_condition
+        adata_single.obs["condition"] = df_singleperts_condition
+        adata_single.obs["perts_name"] = df_single_pert_val
+        adata_single.obsm["perturbation_neighbors"] = df_singleperts_emb
 
         biolord.Biolord.setup_anndata(
-                adata,
-                ordered_attributes_keys=[ordered_attributes_key],
+                adata_single,
+                ordered_attributes_keys=[varying_arg["ordered_attributes_key"]],
                 categorical_attributes_keys=None,
                 retrieval_attribute_key=None,
             )
         
-        return adata
+        return adata_single
     
 
 
