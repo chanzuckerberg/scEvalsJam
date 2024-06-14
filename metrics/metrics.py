@@ -218,6 +218,11 @@ def calc_metrics(anndata_x: ad.AnnData,
         raise Exception("Input anndata_x.X is not sparse.csr_matrix")
     if not sparse.issparse(anndata_y.X):
         raise Exception("Input anndata_y.X is not sparse.csr_matrix")
+
+    if anndata_x.n_obs < 30:
+        raise Exception("Warning: Not enough perturbed cells to calculate some metrics")
+    if anndata_y.n_obs < 30:
+        raise Exception("Warning: Not enough predicted cells to calculate some metrics")
     
     ## If no DE genes are provided, calculate them
     if de_genes_gt is None:
