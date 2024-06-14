@@ -81,9 +81,11 @@ class ARIDistance(AbstractDistance):
         self.accepts_precomputed = False
 
     def __call__(self, X: np.ndarray, Y: np.ndarray, **kwargs) -> float:
+        X_mean = X.mean(axis=0)
+        Y_mean = X.mean(axis=0)
         # Clustering the data
-        kmeans_X = KMeans(n_clusters=self.n_clusters, random_state=42)
-        kmeans_Y = KMeans(n_clusters=self.n_clusters, random_state=42)
+        kmeans_X = KMeans(n_clusters=self.n_clusters, random_state=42).fit(X_mean.reshape(-1, 1))
+        kmeans_Y = KMeans(n_clusters=self.n_clusters, random_state=42).fit(Y_mean.reshape(-1, 1))
         # Get the cluster labels from both predictions and ground truth
         labels_X = kmeans_X.labels_
         labels_Y = kmeans_Y.labels_
@@ -114,9 +116,11 @@ class FowlkesMallowsDistance(AbstractDistance):
         self.accepts_precomputed = False
 
     def __call__(self, X: np.ndarray, Y: np.ndarray, **kwargs) -> float:
+        X_mean = X.mean(axis=0)
+        Y_mean = Y.mean(axis=0)
         # Cluster the data
-        kmeans_X = KMeans(n_clusters=self.n_clusters, random_state=42).fit(X)
-        kmeans_Y = KMeans(n_clusters=self.n_clusters, random_state=42).fit(Y)
+        kmeans_X = KMeans(n_clusters=self.n_clusters, random_state=42).fit(X_mean.reshape(-1, 1))
+        kmeans_Y = KMeans(n_clusters=self.n_clusters, random_state=42).fit(Y_mean.reshape(-1, 1))
         # Get the cluster labels from both predictions and ground truth
         labels_X = kmeans_X.labels_
         labels_Y = kmeans_Y.labels_
@@ -143,7 +147,7 @@ metric_dict = {
     "bhattacharyya_distance": BhattacharyyaDistance(),
     "jaccard_index": JaccardDistance(),
     "F1_score": F1ScoreDistance(),
-    # "adjusted_rand_index": ARIDistance(),
+    "adjusted_rand_index": ARIDistance(),
     "mutual_information": MutualInformationDistance(),
-    # "fowlkes_mallows_index": FowlkesMallowsDistance()
+    "fowlkes_mallows_index": FowlkesMallowsDistance()
 }
