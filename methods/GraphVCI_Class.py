@@ -149,5 +149,5 @@ if __name__ == "__main__":
 
     # gcvi.train(anndata)
 
-    model_save = torch.load("/home/maccyz/Documents/scEvalsJam/methods/artifacts2/saves/default_run_2024.06.14_16:12:13/model_seed=None_epoch=0.pt")
+    model_save = torch.load("./artifacts2/saves/default_run_2024.06.14_16:12:13/model_seed=None_epoch=0.pt")
     gcvi.predict(_anndata, "control", model_save)
