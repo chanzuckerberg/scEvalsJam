@@ -1,6 +1,7 @@
-from models.model import PerturbationModel
-from dataset import PerturbationDataset
 from typing import List
+
+from perturbench.models import PerturbationModel
+from perturbench.dataset import PerturbationDataset
 
 
 class PerturbationBenchmark:
