@@ -12,6 +12,7 @@ class PerturbationModel(ABC):
 
     @abstractmethod
     def __init__(self, device: torch.cuda.device, **kwargs) -> None:
+        self.model_name = ''
         pass
 
     @abstractmethod
