@@ -7,8 +7,8 @@ import torch.nn.functional as F
 from torch_geometric.data import Data, Batch
 from torch_geometric.utils import softmax
 
-from gvci.utils.math_utils import masked_softmax
-from gvci.utils.graph_utils import masked_select
+from ..utils.math_utils import masked_softmax
+from ..utils.graph_utils import masked_select
 
 
 class MyGAT(nn.Module):
@@ -274,7 +274,7 @@ from torch_geometric.typing import Adj, OptTensor, PairTensor
 from torch_geometric.utils import add_remaining_self_loops
 from torch_geometric.nn.conv import MessagePassing
 
-from gvci.utils.model_utils import init_randoms, init_zeros, gcn_norm
+from ..utils.model_utils import init_randoms, init_zeros, gcn_norm
 
 
 class MyGATConv(MessagePassing):

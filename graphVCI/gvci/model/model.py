@@ -7,7 +7,7 @@ from torch.distributions import Normal
 
 from .module import Enc_graphVCI, Dec_graphVCI
 
-from gvci.utils.graph_utils import get_graph
+from ..utils.graph_utils import get_graph
 
 from vci.model import VCI
 from vci.model.module import (
