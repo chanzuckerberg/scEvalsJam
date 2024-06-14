@@ -92,7 +92,7 @@ def train(anndata, graph_data, args):
         print(f'{epoch = }')
         epoch_training_stats = defaultdict(float)
 
-        for data in datasets["loader_tr"]:
+        for step, data in enumerate(datasets["loader_tr"]):
             (genes, perts, cf_genes, cf_perts, covariates) = (
                 data[0], data[1], data[2], data[3], data[4:])
 
@@ -102,6 +102,8 @@ def train(anndata, graph_data, args):
 
             for key, val in minibatch_training_stats.items():
                 epoch_training_stats[key] += val
+
+            break
         model.update_eval_encoder()
 
         for key, val in epoch_training_stats.items():
@@ -120,6 +122,8 @@ def train(anndata, graph_data, args):
         stop = (epoch == args["max_epochs"] - 1)
 
         if (epoch % args["checkpoint_freq"]) == 0 or stop:
+            print("Validation ")
+
             if args["eval_mode"] == "native":
                 evaluation_stats = evaluate(
                     model, datasets,

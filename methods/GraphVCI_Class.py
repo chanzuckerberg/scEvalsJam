@@ -1,4 +1,8 @@
 import graphVCI.gvci.train.train as train_model
+import torch
+from vci.dataset import load_dataset_splits
+from graphVCI.gvci.model import load_graphVCI
+from graphVCI.gvci.utils.graph_utils import get_graph
 
 
 def my_process_adata(adata):
@@ -32,11 +36,11 @@ class GraphVCI_ABC:
         else:
             pass
 
-    def train(self, anndata, model_kws: dict=None):
+    def train(self, anndata, model_kws: dict = None):
         if model_kws is None:
             model_kws = {
                 "name": "default_run",
-                "artifact_path": "./artifacts/",
+                "artifact_path": "./artifacts2/",
                 # "graph_path": None,
 
                 # "covariate_keys": "covariates",
@@ -80,13 +84,75 @@ class GraphVCI_ABC:
 
             }
 
-        # Convert raw counts to normalised
-        sc.pp.normalize_total(anndata)
-        # sc.pp.log1p(anndata)
-        sc.pp.highly_variable_genes(anndata, n_top_genes=100, subset=True)
+        # TODO: is filtering needed
+        self._process_anndata(anndata)
 
         graph_path = None
         train_model(anndata, graph_path, args=model_kws)
+
+
+    def eval(self, ctl_anndata, perts, graph_path=None, model=None):
+        if self.model is None and model is None:
+            raise ValueError("Model not trained yet")
+
+        # Load model, including origial graph
+        if self.model is None:
+            state_dict, args, _ = model
+            adjacency = state_dict['adjacency']
+            edge_features = state_dict['edge_features']
+            node_features = state_dict['node_features']
+            graph_data = (node_features, adjacency, edge_features)
+
+            self.model = load_graphVCI(graph_data, args, state_dict=state_dict)
+
+        # Process model
+
+        # TODO: filtering
+        self._process_anndata(ctl_anndata)
+
+        ctl_datasets = load_dataset_splits(
+            ctl_anndata, covariate_keys=None, test_ratio=None,
+            sample_cf=True,
+        )['training']
+
+        genes_control = ctl_datasets.genes
+        perts_control = ctl_datasets.perturbations
+        pert_vector = ctl_datasets.perts_dict[perts]
+        pert_vectors = pert_vector.repeat(genes_control.size(0), 1)
+        covars_control = [torch.ones([genes_control.size(0), 1])]  # Currently no fixed covariates
+
+        # print(covars_control[0].shape)
+        out = self.model.predict(
+            genes_control[:10],
+            perts_control[:10],
+            pert_vectors[:10],
+            [covar[:10] for covar in covars_control]
+        )
+        print(out)
+        print(out.shape)
+
+    def _process_anndata(self, anndata):
+        """ Process anndata, used for training and testing """
+        sc.pp.normalize_total(anndata)
+        sc.pp.highly_variable_genes(anndata, n_top_genes=123, subset=True)
+    # def _get_graph_data(self, graph_data, args):
+    #     # Generate graph
+    #     if args['graph_mode'] == "dense":  # row target, col source
+    #         output_adj_mode = "target_to_source"
+    #     elif args['graph_mode'] == "sparse":  # first row souce, second row target
+    #         output_adj_mode = "source_to_target"
+    #     else:
+    #         ValueError("graph_mode not recognized")
+    #     if type(graph_data) == str:
+    #         graph_data = torch.load(graph_data)
+    #     else:
+    #         graph_data = None
+    #     node_features, adjacency, edge_features = get_graph(graph=graph_data,
+    #                                                         n_nodes=args['num_outcomes'], n_features=args["graph_latent_dim"],
+    #                                                         graph_mode=args["graph_mode"], output_adj_mode=output_adj_mode,
+    #                                                         add_self_loops=True)
+    #     graph_data = (node_features, adjacency, edge_features)
+    #     return graph_data
 
 
 if __name__ == "__main__":
@@ -97,4 +163,7 @@ if __name__ == "__main__":
     anndata = sc.read("../1gene-norman.h5ad")
     anndata = my_process_adata(anndata)
 
-    gcvi.train(anndata)
+    # gcvi.train(anndata)
+
+    model_save = torch.load("/home/maccyz/Documents/scEvalsJam/methods/artifacts2/saves/default_run_2024.06.14_16:12:13/model_seed=None_epoch=0.pt")
+    gcvi.eval(anndata, "control", None, model_save)

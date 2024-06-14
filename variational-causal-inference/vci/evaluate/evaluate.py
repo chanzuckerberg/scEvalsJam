@@ -17,9 +17,9 @@ def evaluate(model, datasets, batch_size=None):
     with torch.no_grad():
         evaluation_stats = {
             "training": evaluate_r2(
-                model,
-                datasets["training"].subset_condition(control=False),
-                datasets["training"].subset_condition(control=None),
+                model=model,
+                dataset=datasets["training"].subset_condition(control=False),
+                dataset_control=datasets["training"].subset_condition(control=None),
                 batch_size=batch_size
             ),
             "test": evaluate_r2(
@@ -57,6 +57,7 @@ def evaluate_r2(model, dataset, dataset_control,
     cov_cats = unique_ind(dataset.cov_names)
     cov_cats_control = unique_ind(dataset_control.cov_names)
     pert_cats = unique_ind(dataset.pert_names)
+
     for cov_category in cov_cats.keys():
         idx_control = cov_cats_control[cov_category]
         genes_control = dataset_control.genes[idx_control]
@@ -69,7 +70,10 @@ def evaluate_r2(model, dataset, dataset_control,
         num = genes_control.size(0)
         if batch_size is None:
             batch_size = num
-        for pert_category in pert_cats.keys():
+
+        print("Reducing validation size for speed to first 10 genes")
+        pert_cats_reduced = list(pert_cats.keys())[:10]
+        for pert_category in pert_cats_reduced:
             idx = np.intersect1d(cov_cats[cov_category], pert_cats[pert_category])
             # estimate metrics only for reasonably-sized perturbation/cell-type combos
             if len(idx) > min_samples:
@@ -90,6 +94,7 @@ def evaluate_r2(model, dataset, dataset_control,
                         perts[num_eval:end],
                         [covar[num_eval:end] for covar in covars_control]
                     )
+
                     yp.append(out.detach().cpu())
 
                     num_eval += batch_size

@@ -33,8 +33,6 @@ class Dataset:
         cf_samples=20
     ):
 
-        # data = my_process_adata(data)
-
         self.sample_cf = sample_cf
         self.cf_samples = cf_samples
 
@@ -70,6 +68,7 @@ class Dataset:
                 covariate_keys = [covariate_keys]
             for key in covariate_keys:
                 assert key in data.obs.columns, f"Covariate {key} is missing in the provided adata"
+
         # split
         if split_key in data.uns["fields"]:
             split_key = data.uns["fields"][split_key]
@@ -78,11 +77,12 @@ class Dataset:
             from sklearn.model_selection import train_test_split
 
             data.obs["split"] = "train"
-            idx_train, idx_test = train_test_split(
-                data.obs_names, test_size=test_ratio, random_state=random_state
-            )
-            data.obs["split"].loc[idx_train] = "train"
-            data.obs["split"].loc[idx_test] = "test"
+            if test_ratio is not None:
+                idx_train, idx_test = train_test_split(
+                    data.obs_names, test_size=test_ratio, random_state=random_state
+                )
+                data.obs["split"].loc[idx_train] = "train"
+                data.obs["split"].loc[idx_test] = "test"
             split_key = "split"
         else:
             assert split_key in data.obs.columns, f"Split {split_key} is missing in the provided adata"
@@ -290,13 +290,14 @@ def load_dataset_splits(
         perturbation_key: str = "perturbation",
         control_key: str = "control",
         dose_key: str = "dose",
-        covariate_keys: Union[list, str] = "covariates",
+        covariate_keys: Union[list, str] | None = "covariates",
         split_key: str = None,
         sample_cf: bool = False,
         return_dataset: bool = False,
+        test_ratio=0.2,
 ):
     dataset = Dataset(
-        data_path, perturbation_key, control_key, dose_key, covariate_keys, split_key,
+        data_path, perturbation_key, control_key, dose_key, covariate_keys, split_key, test_ratio=test_ratio,
         sample_cf=sample_cf
     )
 
