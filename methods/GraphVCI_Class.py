@@ -30,7 +30,7 @@ class GraphVCI_ABC:
         else:
             pass
 
-    def train(self, anndata, model_kws: dict = None):
+    def train(self, anndata, model_kws: dict = None, graph_path=None):
         if model_kws is None:
             model_kws = {
                 "name": "default_run",
@@ -81,7 +81,6 @@ class GraphVCI_ABC:
         # TODO: is filtering needed?
         self._process_anndata(anndata)
 
-        graph_path = None
         train_model(anndata, graph_path, args=model_kws)
 
     def predict(self, anndata, perts, model=None):
