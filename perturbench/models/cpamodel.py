@@ -67,7 +67,5 @@ class CPA(PerturbationModel):
     def save(self):
         output_dir_path=self.config["path"]["output_dir_path"]
         output_file_name=self.config["path"]["output_file_name"]
-        print(output_dir_path)
-        print(output_file_name)
         self.adata.write(os.path.join(output_dir_path, output_file_name))
         
