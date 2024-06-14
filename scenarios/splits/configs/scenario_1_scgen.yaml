@@ -1,6 +1,11 @@
 method: scgen
 test_size: 1
-test_split: false
+split_test: false
 val_size: 0.3
 scenario_name: Scenario 1 scGen
-train_dataset: 
+train_dataset: Test1
+test_dataset: Test2
+perturbation_key: perturbation
+cell_type_key: cell_type
+min_cells: 25
+seed: 0

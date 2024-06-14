@@ -28,6 +28,9 @@ class MethodTransform:
         if self.config is not None:
             hvg = self.config['hvg']
             num_hvgs = self.config['num_hvgs']
+        else:
+            hvg = None
+            num_hvgs = None
         
         # Current preprocessing assumes that the data is not normalized or log-transformed
         if method is None:

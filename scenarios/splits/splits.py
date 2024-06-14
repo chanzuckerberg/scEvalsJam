@@ -5,8 +5,8 @@ from sklearn.model_selection import train_test_split
 class Scenarios:
     """Generic class for defining different scenarios for splitting data"""
     
-    def __init__(self, scenario, adata, scenario_config):
-        self.scenario_instance = scenario(adata, scenario_config)
+    def __init__(self, scenario, adata_train, adata_test, scenario_config):
+        self.scenario_instance = scenario(adata_train, adata_test, scenario_config)
         
     def return_data(self):
         self.scenario_instance.format_scenario()
@@ -64,8 +64,8 @@ class Scenario1(Scenarios):
             "Genes in training and testing datasets are not the same"
         
         # Ensure that the perturbation names are the same between test and train
-        assert np.all(self.adata_train.obs[self.perturbation_key].unique() == \
-                        self.adata_test.obs[self.perturbation_key].unique()), \
+        assert np.all(set(self.adata_train.obs[self.perturbation_key].unique()) == \
+                        set(self.adata_test.obs[self.perturbation_key].unique())), \
             "Perturbations in training and testing datasets are not the same"
         
         # Add train and test quantifiers to the anndata objects
@@ -128,13 +128,15 @@ class Scenario1(Scenarios):
                 self.adata_test, self.test_size, self.perturbation_key,
                 "test", "heldout"
             )
+        else:
+            adata_test = self.adata_test
             
         # Assert perturbations are equal between train, test and validation
-        assert np.all(adata_train.obs[self.perturbation_key].unique() == \
-                        adata_val.obs[self.perturbation_key].unique()), \
+        assert np.all(set(adata_train.obs[self.perturbation_key].unique()) == \
+                        set(adata_val.obs[self.perturbation_key].unique())), \
             "Perturbations in training and validation datasets are not the same"
-        assert np.all(adata_train.obs[self.perturbation_key].unique() == \
-                        adata_test.obs[self.perturbation_key].unique()), \
+        assert np.all(set(adata_train.obs[self.perturbation_key].unique()) == \
+                        set(adata_test.obs[self.perturbation_key].unique())), \
             "Perturbations in training and testing datasets are not the same"
 
         # Return the train, validation, and test datasets
