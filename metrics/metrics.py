@@ -10,7 +10,7 @@ Date: June 13, 2024
 """
 
 import numpy as np
-from sklearn.metrics import adjusted_rand_score, f1_score, mutual_info_score, fowlkes_mallows_score
+from sklearn.metrics import adjusted_rand_score, f1_score, normalized_mutual_info_score, fowlkes_mallows_score
 from sklearn.cluster import KMeans
 from pertpy.tools._distances._distances import AbstractDistance
 import pertpy as pt
@@ -24,6 +24,7 @@ def jaccard_similarity(list1, list2):
     return len(set1.intersection(set2)) / len(set1.union(set2))
 
 class BhattacharyyaDistance(AbstractDistance):
+    # Measures the overlap between two statistical samples
     def __init__(self) -> None:
         super().__init__()
         self.accepts_precomputed = False
@@ -41,6 +42,8 @@ class BhattacharyyaDistance(AbstractDistance):
         raise NotImplementedError("Bhattacharyya distance cannot be calculated from precomputed matrix directly.")
 
 class JaccardDistance(AbstractDistance):
+    # A measure of dissimilarity based on set comparison (intersection and union)
+    # gene expressions are binarized based on a threshold (e.g., gene is expressed or not)
     def __init__(self, threshold=0.5) -> None:
         self.threshold = threshold
         self.accepts_precomputed = True
@@ -58,6 +61,8 @@ class JaccardDistance(AbstractDistance):
 
     
 class F1ScoreDistance(AbstractDistance):
+    # The harmonic mean of precision and recall
+    # gene expressions are binarized based on a threshold (e.g., gene is expressed or not)
     def __init__(self, threshold=0.5) -> None:
         self.threshold = threshold
         self.accepts_precomputed = False
@@ -75,6 +80,7 @@ class F1ScoreDistance(AbstractDistance):
         raise NotImplementedError("F1 score cannot be calculated from a pairwise distance matrix.")
 
 class ARIDistance(AbstractDistance):
+    # Measures the similarity between two data clusterings, adjusted for chance
     def __init__(self, n_clusters=5) -> None:
         super().__init__()
         self.n_clusters = n_clusters
@@ -98,18 +104,20 @@ class ARIDistance(AbstractDistance):
         raise NotImplementedError("ARI distance cannot be calculated from a pairwise distance matrix.")
 
 class MutualInformationDistance(AbstractDistance):
+    # Quantifies the amount of information obtained about one random variable through observing the other random variable, scaled to a fixed range between 0 and 1
     def __init__(self) -> None:
         super().__init__()
         self.accepts_precomputed = False
 
     def __call__(self, X: np.ndarray, Y: np.ndarray, **kwargs) -> float:
-        x, y = X.mean(axis=0), Y.mean(axis=0)
-        return mutual_info_score(x, y)
+        X_mean, Y_mean = X.mean(axis=0), Y.mean(axis=0)
+        return normalized_mutual_info_score(X_mean, Y_mean)
 
     def from_precomputed(self, P: np.ndarray, idx: np.ndarray, **kwargs) -> float:
         raise NotImplementedError("Mutual Information cannot be calculated from a pairwise distance matrix.")
 
 class FowlkesMallowsDistance(AbstractDistance):
+    # Based on the Fowlkes-Mallows index, a measure of clustering similarity
     def __init__(self, n_clusters=5) -> None:
         super().__init__()
         self.n_clusters = n_clusters
