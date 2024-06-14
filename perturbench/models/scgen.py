@@ -1,11 +1,11 @@
-from perturbench import PerturbationModel
-from perturbench import PerturbationDataset
+from perturbench.models import PerturbationModel
+from perturbench.dataset import PerturbationDataset
 import pathlib
 import scipy as sp
 import torch
 
 
-class ScGenModel(PerturbationModel):
+class scGenModel(PerturbationModel):
     def __init__(self, device: torch.cuda.device, **kwargs) -> None:
         pass
 

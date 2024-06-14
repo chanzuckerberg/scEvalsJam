@@ -12,6 +12,7 @@ class PerturbationModel(ABC):
 
     @abstractmethod
     def __init__(self, device: torch.cuda.device, **kwargs) -> None:
+        self.model_name = ''
         pass
 
     @abstractmethod
@@ -21,7 +22,6 @@ class PerturbationModel(ABC):
     @abstractmethod
     def predict(self, data: PerturbationDataset, perturbation: List[str]) -> sp.sparse.csr_matrix:
         """
-
         :param data:
             A PerturbationDataset where all cells are unperturbed (i.e. baseline), from which
             to make a prediction.
@@ -30,10 +30,6 @@ class PerturbationModel(ABC):
             are encoded as described in PerturbationDataset.
         :return:
         """
-
-        if any([x != "control" for x in data.perturbation]):
-            raise ValueError("Perturbation predictions must be made from control cells")
-
         pass
 
     @abstractmethod
