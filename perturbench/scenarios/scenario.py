@@ -1,10 +1,8 @@
 from abc import ABC, abstractmethod
-from perturbench.models import PerturbationDataset
 
 
-class Scenario(ABC):
-    """Responsible for creating a train/test split according to a given evaluation scenario."""
+class PerturbationScenario:
 
     @abstractmethod
-    def __init__(self, data: PerturbationDataset):
+    def __init__(self) -> None:
         pass

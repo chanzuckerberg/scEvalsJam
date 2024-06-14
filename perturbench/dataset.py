@@ -4,23 +4,24 @@ import anndata as ad
 
 
 class PerturbationDataset:
-    """Class responsible for providing perturbation data for model training and prediction."""
+    """Class responsible for providing perturbation data for model training and prediction, as well as
+    harmonising the attributes available in a dataset. Uses AnnData."""
 
-    def __init__(self, anndata: ad.AnnData) -> None:
-        pass
+    def __init__(self, anndata: ad.AnnData, perturbation_field, covariate_fields) -> None:
+        self.raw_counts = anndata.X
+        self.perturbations = anndata.obs[perturbation_field]
+        self.covariates = anndata.obs[covariate_fields]
 
     def raw_counts(self) -> sp.sparse.csr_matrix:
-        pass
+        return self.raw_counts
 
     def covariates(self) -> pd.DataFrame:
-        pass
+        return self.covariates
 
     def perturbation(self) -> pd.Series:
-        """
+        return self.perturbations
 
-        :return:
-        y: pd.Series
-            Returns a pd.Series where None denotes the control condition, genetic perturbations
-            are encoded as "GENETIC:HUGO_SYMBOL" and small molecule perturbations are encoded as "CHEMICAL:CHEMBL".
-        """
-        pass
+    def anndata(self) -> ad.AnnData:
+        anndata = ad.AnnData(self.raw_counts, obs=self.covariates)
+        anndata.obs["perturbation"] = self.perturbations
+        return anndata
