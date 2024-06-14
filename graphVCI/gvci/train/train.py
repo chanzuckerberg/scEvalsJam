@@ -18,13 +18,13 @@ from vci.utils.data_utils import data_collate
 from ..utils.graph_utils import get_graph
 
 
-def prepare(anndata, graph_data, args, covariate_keys=None, state_dict=None):
+def prepare(anndata, graph_data, args, covariate_keys=None, state_dict=None, split_key=None):
     """
     Instantiates autoencoder and dataset to run an experiment.
     """
 
     datasets = load_dataset_splits(
-        anndata, covariate_keys=covariate_keys,
+        anndata, covariate_keys=covariate_keys, split_key=split_key,
         sample_cf=(True if args["dist_mode"] == 'match' else False),
     )
 
@@ -54,14 +54,14 @@ def prepare(anndata, graph_data, args, covariate_keys=None, state_dict=None):
     return model, datasets
 
 
-def train(anndata, graph_data, args):
+def train(anndata, graph_data, split_key, args):
     """
     Trains a graphVCI model
     """
     if args["seed"] is not None:
         torch.manual_seed(args["seed"])
 
-    model, datasets = prepare(anndata, graph_data, args, args['covariate_keys'])
+    model, datasets = prepare(anndata, graph_data, args, args['covariate_keys'], split_key=split_key)
 
     datasets.update(
         {

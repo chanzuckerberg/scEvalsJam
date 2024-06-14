@@ -81,7 +81,7 @@ class GraphVCI_ABC:
         # TODO: is filtering needed?
         self._process_anndata(anndata)
 
-        train_model(anndata, graph_path, args=model_kws)
+        train_model(anndata, graph_path, split_key=None, args=model_kws)
 
     def predict(self, anndata, perts, save_dir=None):
         if self.model is None and save_dir is None:
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     _anndata = sc.read("../1gene-norman.h5ad")
     _anndata = my_process_adata(_anndata)
 
-    # gcvi.train(anndata)
+    gcvi.train(_anndata)
     save_dir = "./artifacts2/saves/default_run_2024.06.14_16:12:13/model_seed=None_epoch=0.pt"
 
     gcvi.predict(_anndata, "control", save_dir)
