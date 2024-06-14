@@ -1,6 +1,8 @@
 from perturbench import PerturbationModel
 from perturbench import PerturbationDataset
 import cpa
+import numpy as np
+import os
 
 
 class CPA(PerturbationModel):
@@ -49,15 +51,23 @@ class CPA(PerturbationModel):
     def predict(self):
         self.adata.layers['X_true'] = self.adata.X.copy()
         ctrl_adata = self.adata[self.adata.obs['perturbation_name'] == 'ctrl'].copy()
-        adata.X = ctrl_adata.X[np.random.choice(ctrl_adata.n_obs, size=adata.n_obs, replace=True), :]
+        self.adata.X = ctrl_adata.X[np.random.choice(ctrl_adata.n_obs, size=self.adata.n_obs, replace=True), :]
         self.model.predict(self.adata, batch_size=2048)
         self.adata.layers['CPA_pred'] = self.adata.obsm['CPA_pred'].copy()
         
-    
-    def load(self, adata):
+    @classmethod
+    def load(self, adata, config):
         model = cpa.CPA.load(
-            dir_path=self.config["path"]["save_path"],
+            dir_path=config["path"]["save_path"],
             adata=adata,
             use_gpu=True
         )
         return model
+        
+    def save(self):
+        output_dir_path=self.config["path"]["output_dir_path"]
+        output_file_name=self.config["path"]["output_file_name"]
+        print(output_dir_path)
+        print(output_file_name)
+        self.adata.write(os.path.join(output_dir_path, output_file_name))
+        

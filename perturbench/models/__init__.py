@@ -1,0 +1,1 @@
+from .cpamodel import CPA

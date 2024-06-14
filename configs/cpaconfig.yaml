@@ -16,6 +16,8 @@ model_params:
   variational: false
 path:
   save_path: .
+  output_dir_path: .
+  output_file_name: cpaout.h5ad
 trainer_params:
   adv_loss: cce
   adv_lr: 0.0001
