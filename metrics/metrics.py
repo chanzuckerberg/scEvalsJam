@@ -34,7 +34,7 @@ class BhattacharyyaDistance(AbstractDistance):
     def __call__(self, X: np.ndarray, Y: np.ndarray, **kwargs) -> float:
         
         def softmax(x):
-            return(np.exp(x)/np.exp(x).sum())
+            return(np.exp(x)/np.exp(x).sum(axis=1, keepdims=True))
         
         # TODO: check if this is the correct way to calculate the Bhattacharyya distance
         X = softmax(X)
@@ -42,10 +42,7 @@ class BhattacharyyaDistance(AbstractDistance):
         
         X_mean = X.mean(axis=0)
         Y_mean = Y.mean(axis=0)
-        # Normalize the means to probability distributions
-        X_norm = X_mean / np.sum(X_mean)
-        Y_norm = Y_mean / np.sum(Y_mean)
-        BC = np.sum(np.sqrt(X_norm * Y_norm))
+        BC = np.sum(np.sqrt(X_mean * Y_mean))
         return -np.log(BC)
 
     def from_precomputed(self, P: np.ndarray, idx: np.ndarray, **kwargs) -> float:
