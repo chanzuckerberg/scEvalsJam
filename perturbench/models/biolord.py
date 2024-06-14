@@ -110,13 +110,13 @@ class BioLord(PerturbationModel):
 
     @staticmethod
     def preprocess(
-        adata, 
+        adata: anndata.AnnData, 
         config : dict,
         data_name : str,
         outs_dir : str,
         pert_column : str,
         control_key : str,
-    ):
+    ) -> anndata.AnnData:
         # Assign variables
         cores = os.cpu_count()
         adata.obs["condition"] = adata.obs[pert_column].astype(str)
