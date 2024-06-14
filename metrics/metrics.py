@@ -61,8 +61,12 @@ class JaccardDistance(AbstractDistance):
         Y_binary = Y.mean(axis=0) > self.threshold
         intersection = np.logical_and(X_binary, Y_binary).sum(axis=0)
         union = np.logical_or(X_binary, Y_binary).sum(axis=0)
-        # Convert Jaccard Index to distance
-        return 1 - np.mean(intersection / union)
+        # Check if the union is zero to avoid division by zero 
+        if union == 0:
+            return 1.0  # Maximum Jaccard distance since there's no overlap
+        else:
+            # Convert Jaccard Index to distance
+            return 1 - np.mean(intersection / union)
     
     def from_precomputed(self, P: np.ndarray, idx: np.ndarray, **kwargs) -> float:
         raise NotImplementedError("Jaccard distance cannot be calculated from precomputed matrix directly.")
