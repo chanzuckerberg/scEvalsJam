@@ -83,13 +83,15 @@ class GraphVCI_ABC:
 
         train_model(anndata, graph_path, args=model_kws)
 
-    def predict(self, anndata, perts, model=None):
-        if self.model is None and model is None:
+    def predict(self, anndata, perts, save_dir=None):
+        if self.model is None and save_dir is None:
             raise ValueError("Model not trained yet")
 
         # Load model, including origial graph
         if self.model is None:
-            state_dict, args, _ = model
+            model_save = torch.load(save_dir)
+
+            state_dict, args, _ = model_save
             adjacency = state_dict['adjacency']
             edge_features = state_dict['edge_features']
             node_features = state_dict['node_features']
@@ -147,6 +149,6 @@ if __name__ == "__main__":
     _anndata = my_process_adata(_anndata)
 
     # gcvi.train(anndata)
+    save_dir = "./artifacts2/saves/default_run_2024.06.14_16:12:13/model_seed=None_epoch=0.pt"
 
-    model_save = torch.load("./artifacts2/saves/default_run_2024.06.14_16:12:13/model_seed=None_epoch=0.pt")
-    gcvi.predict(_anndata, "control", model_save)
+    gcvi.predict(_anndata, "control", save_dir)
