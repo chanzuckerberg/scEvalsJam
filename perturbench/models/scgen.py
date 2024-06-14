@@ -7,6 +7,8 @@ import torch
 
 class scGenModel(PerturbationModel):
     def __init__(self, device: torch.cuda.device, **kwargs) -> None:
+        self.name = 'scGen'
+        self.description = 'VAE combined with vector arithmetic for perturbation response prediction.'
         pass
 
     def train(self, data: PerturbationDataset) -> None:

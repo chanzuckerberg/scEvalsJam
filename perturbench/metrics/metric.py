@@ -11,7 +11,7 @@ class PerturbationMetric(ABC):
 
     @abstractmethod
     def compute(self,
-                baseline: PerturbationDataset,
+                control: PerturbationDataset,
                 ground_truth: PerturbationDataset,
                 prediction: PerturbationDataset
                 ) -> int:

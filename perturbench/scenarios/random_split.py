@@ -9,6 +9,8 @@ from perturbench.scenarios import PerturbationScenario
 class RandomSplitScenario(PerturbationScenario):
 
     def __init__(self) -> None:
+        self.name = 'Random splitting'
+        self.description = 'Randomely splits the input data'
         pass
 
     def split(self, dataset: PerturbationDataset) -> Tuple[PerturbationDataset, PerturbationDataset]:
@@ -23,4 +25,15 @@ class RandomSplitScenario(PerturbationScenario):
 
         train_dataset = PerturbationDataset(train_adata, 'perturbation', dataset.covariates.columns.tolist())
         test_dataset = PerturbationDataset(test_adata, 'perturbation', dataset.covariates.columns.tolist())
+
+        if any([x is None for x in test_dataset.get_perturbations()]):
+            raise ValueError("Test dataset should only contain control cells")
+
         return train_dataset, test_dataset
+
+    def get_name(self) -> str:
+        return self.name
+
+    def get_description(self) -> str:
+        return self.description
+

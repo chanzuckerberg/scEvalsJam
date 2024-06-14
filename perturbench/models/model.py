@@ -12,7 +12,8 @@ class PerturbationModel(ABC):
 
     @abstractmethod
     def __init__(self, device: torch.cuda.device, **kwargs) -> None:
-        self.model_name = ''
+        self.name = ''
+        self.description = ''
         pass
 
     @abstractmethod
@@ -39,3 +40,11 @@ class PerturbationModel(ABC):
     @abstractmethod
     def load(self, path: pathlib.Path) -> None:
         pass
+
+    @abstractmethod
+    def get_name(self) -> str:
+        return self.name
+
+    @abstractmethod
+    def get_description(self) -> str:
+        return self.description

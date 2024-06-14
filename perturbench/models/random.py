@@ -15,7 +15,8 @@ class RandomModel(PerturbationModel):
     def __init__(self, device: torch.cuda.device, **kwargs) -> None:
         self.kwargs = kwargs
         self.device = device
-        self.model = "initialised!"
+        self.name = "Random model"
+        self.description = "Generates a random prediction that is normally distributed"
         pass
 
     def train(self, data: PerturbationDataset) -> None:
@@ -37,3 +38,9 @@ class RandomModel(PerturbationModel):
     def load(self, path: pathlib.Path) -> None:
         with open(os.path.join(path, "model.txt"), "r") as file:
             self.model = file.read()
+
+    def get_name(self) -> str:
+        return self.name
+
+    def get_description(self) -> str:
+        return self.description
