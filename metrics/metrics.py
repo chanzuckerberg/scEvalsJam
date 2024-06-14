@@ -15,6 +15,7 @@ from sklearn.cluster import KMeans
 from pertpy.tools._distances._distances import AbstractDistance
 import pertpy as pt
 from typing import Union
+import anndata as ad
 
 def jaccard_similarity(list1, list2):
     """
@@ -174,12 +175,12 @@ metric_dict = {
 
 def calc_metrics(anndata_x: ad.AnnData, 
                  anndata_y: ad.AnnData, 
+                 anndata_control: Union[None, ad.AnnData], 
                  pert: str, 
                  metric_dict: dict,
-                 de_genes_gt: Union[dict, ad.AnnData],
-                 de_genes_pred: Union[dict, ad.AnnData],
-                 expression_change: Union[None, ad.AnnData], 
-                 de_subset: Union[None, str]
+                 de_genes_gt = None,
+                 de_genes_pred = None,
+                 de_subset = None
                 ) -> list:
     
     """
@@ -218,12 +219,12 @@ def calc_metrics(anndata_x: ad.AnnData,
         raise Exception("Input anndata_y.X is not sparse.csr_matrix")
     
     ## If no DE genes are provided, calculate them
-    if isinstance(de_genes_gt, ad.AnnData):
+    if de_genes_gt is None:
         de_genes_gt = get_de_genes(de_genes_gt, anndata_x,
                            method = "wilcoxon",
                            top_k = 100,
                            groupby_key = 'perturbation_name')
-    if isinstance(de_genes_pred, ad.AnnData):
+    if de_genes_pred is None:
         de_genes_pred = get_de_genes(de_genes_pred, anndata_y,
                            method = "wilcoxon",
                            top_k = 100,
@@ -234,9 +235,9 @@ def calc_metrics(anndata_x: ad.AnnData,
     adata_pred_pert = anndata_y[anndata_y.obs['perturbation_name'] == pert] 
     
     ## If looking at expression change, subtract control expression
-    if expression_change != None:
-        adata_c = adata_c[adata_c.obs['perturbation_name'] == 'control']
-        control_mean = np.array(adata_c.X.mean(axis=0))[0]
+    if anndata_control is not None:
+        anndata_control = anndata_control[anndata_control.obs['perturbation_name'] == 'control']
+        control_mean = np.array(anndata_control.X.mean(axis=0))[0]
         pred = np.array(adata_pred_pert.X-control_mean)
         gt = np.array(adata_gt_pert.X-control_mean)
     else:
@@ -244,7 +245,7 @@ def calc_metrics(anndata_x: ad.AnnData,
         gt = adata_gt_pert.X.toarray()
         
     ## If looking at DE genes, subset anndata
-    if de_subset != None:
+    if de_subset is not None:
         if (de_subset != "de_up") | (de_subset != "de_dn"):
             raise Exception("Please specify de_subset = 'de_up' or 'de_dn'")
         de_mask = anndata_x.var.index.isin(de_genes_gt[pert][de_subset])
