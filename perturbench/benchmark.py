@@ -28,48 +28,56 @@ class PerturbationBenchmark:
     
     def add_model(self, PerturbationModel):
         """Add a model to the list of perturbation benchmark"""
+
         self.models.append(PerturbationModel)
+
         pass
     
     def add_data(self, PerturbationDataset):
         """Add a dataset to the list of perturbation benchmark"""
+        ## Check this with data module
         
         pass
     
     def train(self, train_data: PerturbationDataset):
         """Train each model in the list of perturbation benchmark"""
-        ## train each model
+
         for model in self.models:
             model.train(train_data)
             model.istrained = True
             print(f"Model {model.model_name} is trained successfully")
+
         pass
     
     def predict(self, test_data: PerturbationDataset, perturbation: List[str]):
         """Predict each model in the list of perturbation benchmark"""
-        ## predict each model
+
         for model in self.models:
             model.predict(test_data, perturbation)
             print(f"Model {model.model_name} is predicted successfully")
+
         pass
     
     def calculate_metrics(self):
         """Calculate metrics for each model in the list of perturbation benchmark"""
-        ## calculate metrics
+
         for model in self.models:
             model.calculate_metrics()
             print(f"Model {model.model_name} metrics are calculated successfully")
+
         pass
     
     def run(self):
-        """Run the trainin, prediction and metric calculation for each
+        """Run the training, prediction and metric calculation for each
         model in the list of perturbation benchmark"""
         
         ## data processing and split to train/test TODO: implement this
         
-        
-        ## predict each model
+        ## train all models
         self.train(train_data)
+        
+        ## predict all models
+        self.predict(test_data, perturbation)
             
         ## calculate metrics
         self.calculate_metrics()
