@@ -2,7 +2,6 @@ import graphVCI.gvci.train.train as train_model
 import torch
 from vci.dataset import load_dataset_splits
 from graphVCI.gvci.model import load_graphVCI
-from graphVCI.gvci.utils.graph_utils import get_graph
 
 
 def my_process_adata(adata):
@@ -11,11 +10,6 @@ def my_process_adata(adata):
     # Fields
     fields = {}
     adata.uns['fields'] = fields
-
-    # # Randomly select a subset of genes to measure to reduce size
-    # num_cols = min(adata.var.shape[0], 5000)
-    # sampled_columns = np.random.choice(adata.var.shape[0], num_cols, replace=False)
-    # adata = adata[:, sampled_columns]
 
     # Perturbation column name
     fields['perturbation'] = 'perturbation_name'
@@ -84,7 +78,7 @@ class GraphVCI_ABC:
 
             }
 
-        # TODO: is filtering needed
+        # TODO: is filtering needed?
         self._process_anndata(anndata)
 
         graph_path = None
@@ -135,24 +129,7 @@ class GraphVCI_ABC:
         """ Process anndata, used for training and testing """
         sc.pp.normalize_total(anndata)
         sc.pp.highly_variable_genes(anndata, n_top_genes=123, subset=True)
-    # def _get_graph_data(self, graph_data, args):
-    #     # Generate graph
-    #     if args['graph_mode'] == "dense":  # row target, col source
-    #         output_adj_mode = "target_to_source"
-    #     elif args['graph_mode'] == "sparse":  # first row souce, second row target
-    #         output_adj_mode = "source_to_target"
-    #     else:
-    #         ValueError("graph_mode not recognized")
-    #     if type(graph_data) == str:
-    #         graph_data = torch.load(graph_data)
-    #     else:
-    #         graph_data = None
-    #     node_features, adjacency, edge_features = get_graph(graph=graph_data,
-    #                                                         n_nodes=args['num_outcomes'], n_features=args["graph_latent_dim"],
-    #                                                         graph_mode=args["graph_mode"], output_adj_mode=output_adj_mode,
-    #                                                         add_self_loops=True)
-    #     graph_data = (node_features, adjacency, edge_features)
-    #     return graph_data
+
 
 
 if __name__ == "__main__":
