@@ -10,7 +10,6 @@ Date: June 13, 2024
 """
 
 import numpy as np
-from scipy.stats import entropy
 from sklearn.metrics import adjusted_rand_score, f1_score, mutual_info_score, fowlkes_mallows_score
 from sklearn.cluster import KMeans
 from pertpy.tools._distances._distances import AbstractDistance
@@ -144,7 +143,7 @@ metric_dict = {
     "bhattacharyya_distance": BhattacharyyaDistance(),
     "jaccard_index": JaccardDistance(),
     "F1_score": F1ScoreDistance(),
-    "adjusted_rand_index": ARIDistance(),
+    # "adjusted_rand_index": ARIDistance(),
     "mutual_information": MutualInformationDistance(),
-    "fowlkes_mallows_index": FowlkesMallowsDistance()
+    # "fowlkes_mallows_index": FowlkesMallowsDistance()
 }
