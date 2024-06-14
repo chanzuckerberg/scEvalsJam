@@ -14,6 +14,7 @@ from sklearn.metrics import adjusted_rand_score, f1_score, normalized_mutual_inf
 from sklearn.cluster import KMeans
 from pertpy.tools._distances._distances import AbstractDistance
 import pertpy as pt
+from typing import Union
 
 def jaccard_similarity(list1, list2):
     """
@@ -147,6 +148,9 @@ class FowlkesMallowsDistance(AbstractDistance):
     def from_precomputed(self, P: np.ndarray, idx: np.ndarray, **kwargs) -> float:
         raise NotImplementedError("Fowlkes-Mallows index cannot be calculated from a pairwise distance matrix.")
 
+        
+### --- Calculate metrics
+
 metric_dict = {
     "mse": pt.tools.Distance(metric="mse"),
     "mae": pt.tools.Distance(metric="mean_absolute_error"),
@@ -167,3 +171,93 @@ metric_dict = {
     "mutual_information": MutualInformationDistance(),
     "fowlkes_mallows_index": FowlkesMallowsDistance()
 }
+
+def calc_metrics(anndata_x: ad.AnnData, 
+                 anndata_y: ad.AnnData, 
+                 pert: str, 
+                 metric_dict: dict,
+                 de_genes_gt: Union[dict, ad.AnnData],
+                 de_genes_pred: Union[dict, ad.AnnData],
+                 expression_change: Union[None, ad.AnnData], 
+                 de_subset: Union[None, str]
+                ) -> list:
+    
+    """
+    Calculate differentially expressed genes between control and perturbation.
+
+    ### Args:
+    ----------
+    anndata_x:
+        AnnData object containing perturbed "ground truth" cells. Data in .X should be sparse.csr_matrix. 
+        Assumes both AnnData objects were normalised appropriately.
+    anndata_y:
+        AnnData object containing predicted cells. Data in .X should be sparse.csr_matrix. 
+        Assumes both AnnData objects were normalised appropriately.   
+    pert:
+        String indicating which perturbation to calculate metrics for from 'perturbation_name' key.
+    metric_dict:
+        A pre-computed dictionary of metrics to calculate i.e. {"metric_name": metric_function}.
+    de_genes_gt:
+        Either a dictionary of pre-computed DE genes {"de_up":lst, "de_dn":lst} for 
+        control vs perturbed or an AnnData object indicated control expression. 
+    de_genes_pred:
+        Either a dictionary of pre-computed DE genes {"de_up":lst, "de_dn":lst} for 
+        control vs predicted or an AnnData object indicated control expression.
+    expression_change:
+        Either NaN or an AnnData object that represents control expression. 
+        If an AnnData object is provided the metrics will be calculated on the expression change between perturbation/prediction and control.
+    de_subset:
+        Either NaN or a string (one of "de_up" or "de_dn"). 
+        If a string is provided the input anndata objects will be subset to either the up- or -downregulated genes before calculating metrics.
+    """
+    
+    ## Check input
+    if not sparse.issparse(anndata_x.X):
+        raise Exception("Input anndata_x.X is not sparse.csr_matrix")
+    if not sparse.issparse(anndata_y.X):
+        raise Exception("Input anndata_y.X is not sparse.csr_matrix")
+    
+    ## If no DE genes are provided, calculate them
+    if isinstance(de_genes_gt, ad.AnnData):
+        de_genes_gt = get_de_genes(de_genes_gt, anndata_x,
+                           method = "wilcoxon",
+                           top_k = 100,
+                           groupby_key = 'perturbation_name')
+    if isinstance(de_genes_pred, ad.AnnData):
+        de_genes_pred = get_de_genes(de_genes_pred, anndata_y,
+                           method = "wilcoxon",
+                           top_k = 100,
+                           groupby_key = 'perturbation_name')
+    
+    ## Select data from relevant perturbation
+    adata_gt_pert = anndata_x[anndata_x.obs['perturbation_name'] == pert]
+    adata_pred_pert = anndata_y[anndata_y.obs['perturbation_name'] == pert] 
+    
+    ## If looking at expression change, subtract control expression
+    if expression_change != None:
+        adata_c = adata_c[adata_c.obs['perturbation_name'] == 'control']
+        control_mean = np.array(adata_c.X.mean(axis=0))[0]
+        pred = np.array(adata_pred_pert.X-control_mean)
+        gt = np.array(adata_gt_pert.X-control_mean)
+    else:
+        pred = adata_pred_pert.X.toarray()
+        gt = adata_gt_pert.X.toarray()
+        
+    ## If looking at DE genes, subset anndata
+    if de_subset != None:
+        if (de_subset != "de_up") | (de_subset != "de_dn"):
+            raise Exception("Please specify de_subset = 'de_up' or 'de_dn'")
+        de_mask = anndata_x.var.index.isin(de_genes_gt[pert][de_subset])
+        pred = pred[:, de_mask]
+        gt = gt[:, de_mask]
+    
+    ## Compute metrics
+    pert_scores = [metric_fn(pred, gt) for metric_name, metric_fn in metric_dict.items()]
+    
+    ## Add jaccard between DE genes
+    jaccard_up = jaccard_similarity(de_genes_gt[pert]['de_up'], de_genes_pred[pert]['de_up'])
+    jaccard_dn = jaccard_similarity(de_genes_gt[pert]['de_dn'], de_genes_pred[pert]['de_dn'])
+    pert_scores.extend([jaccard_up, jaccard_dn])
+    
+    return pert_scores
+
