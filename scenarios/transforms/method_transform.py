@@ -22,7 +22,7 @@ class MethodTransform:
         else:
             self.gpu = False
             
-    def process_data(self, method = None, sample_key = None, perturbation_key = None):
+    def process_data(self, method = None, sample_key = None, perturbation_key = None, gene_name_key = None, cell_type_key = None):
         # Current preprocessing assumes that the data is not normalized or log-transformed
         if method is None:
             raise Exception("Please specify a method.")
@@ -36,6 +36,11 @@ class MethodTransform:
         elif method is "scpregan":
             pass
         elif method is "gears":
+            # https://github.com/snap-stanford/GEARS/blob/master/demo/data_tutorial.ipynb
+            self.adata.var['gene_name'] = gene_name_key
+            # TODO: reformat condition key
+            self.adata.obs['condition'] = perturbation_key
+            self.adata.obs['cell_type'] = cell_type_key
             pass
         elif method is "cellot":
             pass
