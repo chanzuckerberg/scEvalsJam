@@ -1,25 +1,23 @@
 from .gvci.train import train
 
-import argparse
-
 
 def parse_arguments():
     """
     Read arguments if this script is called from a terminal.
     """
-    parser = argparse.ArgumentParser()
 
     # setting arguments
 
     args_dict = {
         "name": "default_run",
         "artifact_path": "./artifacts/",
-        "data_path": "../graphVCI/datasets/marson_prepped.h5ad",
-        "graph_path": "../graphVCI/graphs/marson_grn_128.pth",
-        "covariate_keys": "covariates",
+        # "data_path": "../graphVCI/datasets/marson_prepped.h5ad",
+        # "graph_path": "../graphVCI/graphs/marson_grn_128.pth",
+        # "covariate_keys": "covariates",
 
         # "data_path": "../1gene-norman.h5ad",
-        # "graph_path": None,
+        "graph_path": None,
+        "covariate_keys": None,
 
         "cpu": "store_true",
         "gpu": "0",
@@ -61,9 +59,5 @@ def parse_arguments():
     return args_dict
 
 
-def train_model(args):
-    train(args)
-
-
-if __name__ == "__main__":
-    train(parse_arguments())
+def train_model(anndata, args):
+    train(anndata, args)

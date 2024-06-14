@@ -3,6 +3,7 @@ import time
 import logging
 from datetime import datetime
 from collections import defaultdict
+import scanpy as sc
 
 import numpy as np
 
@@ -17,13 +18,15 @@ from vci.utils.general_utils import initialize_logger, ljson
 from vci.utils.data_utils import data_collate
 
 
-def prepare(args, covariate_keys=None, state_dict=None):
+
+
+def prepare(anndata, args, covariate_keys=None, state_dict=None):
     """
     Instantiates autoencoder and dataset to run an experiment.
     """
 
     datasets = load_dataset_splits(
-        args["data_path"], covariate_keys=covariate_keys,
+        anndata, covariate_keys=covariate_keys,
         sample_cf=(True if args["dist_mode"] == 'match' else False),
     )
 
@@ -36,14 +39,14 @@ def prepare(args, covariate_keys=None, state_dict=None):
     return model, datasets
 
 
-def train(args):
+def train(anndata, args):
     """
     Trains a graphVCI model
     """
     if args["seed"] is not None:
         torch.manual_seed(args["seed"])
 
-    model, datasets = prepare(args, args['covariate_keys'])
+    model, datasets = prepare(anndata, args, args['covariate_keys'])
 
     datasets.update(
         {

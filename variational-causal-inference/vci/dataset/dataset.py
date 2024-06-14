@@ -18,30 +18,6 @@ if not sys.warnoptions:
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
-def my_process_adata(adata):
-    """ Processing for Norman dataset """
-    print("Adjusting dataset for Norman")
-    # Fields
-    fields = {}
-    adata.uns['fields'] = fields
-
-    # TODO: Randomly select a subset of genes to measure to reduce size
-    num_cols = min(adata.var.shape[0], 5000)
-    sampled_columns = np.random.choice(adata.var.shape[0], num_cols, replace=False)
-    adata = adata[:, sampled_columns]
-
-    # Perturbation column name
-    fields['perturbation'] = 'perturbation_name'
-
-    # Control value
-    adata.obs['control'] = (adata.obs['perturbation_name'] == 'control')
-
-    # Set dose to 1
-    adata.obs['dose'] = 1.0
-
-    return adata
-
-
 class Dataset:
     def __init__(
         self,
@@ -56,8 +32,6 @@ class Dataset:
         sample_cf=False,
         cf_samples=20
     ):
-        if type(data) == str:
-            data = sc.read(data)
 
         # data = my_process_adata(data)
 
@@ -312,7 +286,7 @@ class SubDataset:
 
 
 def load_dataset_splits(
-        data_path: str,
+        data_path,
         perturbation_key: str = "perturbation",
         control_key: str = "control",
         dose_key: str = "dose",
