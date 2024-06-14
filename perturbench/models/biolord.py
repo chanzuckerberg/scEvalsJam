@@ -279,7 +279,9 @@ class BioLord(PerturbationModel):
 
 
         # Prepare output
-        
+        # TO DO - WRANGLE FOR METRICS
+        return output_dict
+
 
 
 
