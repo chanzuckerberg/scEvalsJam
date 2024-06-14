@@ -1,0 +1,42 @@
+model_params:
+  doser_type: linear
+  dropout_rate_decoder: 0.0
+  dropout_rate_encoder: 0.2
+  n_hidden_decoder: 256
+  n_hidden_encoder: 256
+  n_latent: 32
+  n_layers_decoder: 2
+  n_layers_encoder: 4
+  recon_loss: nb
+  seed: 8206
+  use_batch_norm_decoder: false
+  use_batch_norm_encoder: true
+  use_layer_norm_decoder: false
+  use_layer_norm_encoder: false
+  variational: false
+path:
+  save_path: .
+  output_dir_path: .
+  output_file_name: cpaout.h5ad
+trainer_params:
+  adv_loss: cce
+  adv_lr: 0.0001
+  adv_steps: 3
+  adv_wd: 7.051355554517135e-06
+  do_clip_grad: false
+  dropout_rate_adv: 0.3
+  gradient_clip_value: 5.0
+  lr: 0.0001
+  mixup_alpha: 0.1
+  n_epochs_adv_warmup: 50
+  n_epochs_kl_warmup: null
+  n_epochs_mixup_warmup: 10
+  n_epochs_pretrain_ae: 10
+  n_hidden_adv: 128
+  n_layers_adv: 2
+  pen_adv: 20.0
+  reg_adv: 10.0
+  step_size_lr: 25
+  use_batch_norm_adv: true
+  use_layer_norm_adv: false
+  wd: 3.2170178270865573e-06
