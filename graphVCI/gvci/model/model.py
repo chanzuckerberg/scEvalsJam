@@ -19,7 +19,7 @@ from vci.model.module import (
 #                    MODEL SAVING                   #
 #####################################################
 
-def load_graphVCI(args, state_dict=None):
+def load_graphVCI(graph_data, args, state_dict=None):
     device = (
         "cuda:" + str(args["gpu"])
         if (not args["cpu"])
@@ -29,7 +29,7 @@ def load_graphVCI(args, state_dict=None):
     )
 
     model = graphVCI(
-        args["graph_path"],
+        graph_data,  # args["graph_path"],
         args["num_outcomes"],
         args["num_treatments"],
         args["num_covariates"],
@@ -43,7 +43,8 @@ def load_graphVCI(args, state_dict=None):
         decode_aggr=args["decode_aggr"],
         patience=args["patience"],
         device=device,
-        hparams=args["hparams"]
+        hparams=args["hparams"],
+        graph_latent_dim=args["graph_latent_dim"]
     )
     if state_dict is not None:
         model.load_state_dict(state_dict)
@@ -79,9 +80,11 @@ class graphVCI(VCI):
             best_score=-1e3,
             patience=5,
             device="cuda",
-            hparams=""
+            hparams="",
+            graph_latent_dim=128,
     ):
         # set hyperparameters
+        self.graph_latent_dim = graph_latent_dim
         self._set_g_hparams()
 
         self.graph_mode = graph_mode
@@ -90,30 +93,32 @@ class graphVCI(VCI):
         self.node_grad = node_grad
         self.edge_grad = edge_grad
 
-        # make graph
-        if self.graph_mode == "dense":  # row target, col source
-            output_adj_mode = "target_to_source"
-        elif self.graph_mode == "sparse":  # first row souce, second row target
-            output_adj_mode = "source_to_target"
-        else:
-            ValueError("graph_mode not recognized")
+        # # make graph
+        # if self.graph_mode == "dense":  # row target, col source
+        #     output_adj_mode = "target_to_source"
+        # elif self.graph_mode == "sparse":  # first row souce, second row target
+        #     output_adj_mode = "source_to_target"
+        # else:
+        #     ValueError("graph_mode not recognized")
+        #
+        # if graph_data is None:
+        #     node_features, adjacency, edge_features = get_graph(
+        #         n_nodes=num_outcomes, n_features=self.g_hparams["graph_latent_dim"],
+        #         graph_mode=graph_mode, output_adj_mode=output_adj_mode,
+        #         add_self_loops=True)
+        # #
+        # # elif type(graph_data) == str:
+        # #     node_features, adjacency, edge_features = get_graph(graph=torch.load(graph_data),
+        # #                                                         n_nodes=num_outcomes, n_features=self.g_hparams["graph_latent_dim"],
+        # #                                                         graph_mode=graph_mode, output_adj_mode=output_adj_mode,
+        # #                                                         add_self_loops=True)
+        # # else:
+        # #     node_features, adjacency, edge_features = get_graph(graph_data,
+        # #                                                         n_nodes=num_outcomes, n_features=self.g_hparams["graph_latent_dim"],
+        # #                                                         graph_mode=graph_mode, output_adj_mode=output_adj_mode,
+        # #                                                         add_self_loops=True)
+        node_features, adjacency, edge_features = graph_data
 
-        if graph_data is None:
-            node_features, adjacency, edge_features = get_graph(
-                n_nodes=num_outcomes, n_features=self.g_hparams["graph_latent_dim"],
-                graph_mode=graph_mode, output_adj_mode=output_adj_mode,
-                add_self_loops=True)
-
-        elif type(graph_data) == str:
-            node_features, adjacency, edge_features = get_graph(graph=torch.load(graph_data),
-                                                                n_nodes=num_outcomes, n_features=self.g_hparams["graph_latent_dim"],
-                                                                graph_mode=graph_mode, output_adj_mode=output_adj_mode,
-                                                                add_self_loops=True)
-        else:
-            node_features, adjacency, edge_features = get_graph(graph_data,
-                                                                n_nodes=num_outcomes, n_features=self.g_hparams["graph_latent_dim"],
-                                                                graph_mode=graph_mode, output_adj_mode=output_adj_mode,
-                                                                add_self_loops=True)
         self.num_nodes, self.num_features = node_features.size()
         self.edge_dim = 1 if edge_features.dim() == 1 else edge_features.size(-1)
 
@@ -142,7 +147,7 @@ class graphVCI(VCI):
 
     def _set_g_hparams(self):
         self.g_hparams = {
-            "graph_latent_dim": 128,
+            "graph_latent_dim": self.graph_latent_dim,
             "graph_encoder_width": 128,
             "graph_encoder_depth": 1,
             "graph_discriminator_width": 64,

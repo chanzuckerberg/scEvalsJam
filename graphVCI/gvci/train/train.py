@@ -3,7 +3,6 @@ import time
 import logging
 from datetime import datetime
 from collections import defaultdict
-import scanpy as sc
 
 import numpy as np
 
@@ -16,11 +15,10 @@ from vci.dataset import load_dataset_splits
 from vci.evaluate import evaluate, evaluate_classic
 from vci.utils.general_utils import initialize_logger, ljson
 from vci.utils.data_utils import data_collate
+from ..utils.graph_utils import get_graph
 
 
-
-
-def prepare(anndata, args, covariate_keys=None, state_dict=None):
+def prepare(anndata, graph_data, args, covariate_keys=None, state_dict=None):
     """
     Instantiates autoencoder and dataset to run an experiment.
     """
@@ -34,19 +32,36 @@ def prepare(anndata, args, covariate_keys=None, state_dict=None):
     args["num_treatments"] = datasets["training"].num_perturbations
     args["num_covariates"] = datasets["training"].num_covariates
 
-    model = load_graphVCI(args, state_dict)
+    # Generate graph
+    if args['graph_mode'] == "dense":  # row target, col source
+        output_adj_mode = "target_to_source"
+    elif args['graph_mode'] == "sparse":  # first row souce, second row target
+        output_adj_mode = "source_to_target"
+    else:
+        ValueError("graph_mode not recognized")
+    if type(graph_data) == str:
+        graph_data = torch.load(graph_data)
+    else:
+        graph_data = None
+    node_features, adjacency, edge_features = get_graph(graph=graph_data,
+        n_nodes=args['num_outcomes'], n_features=args["graph_latent_dim"],
+        graph_mode=args["graph_mode"], output_adj_mode=output_adj_mode,
+        add_self_loops=True)
+    graph_data = (node_features, adjacency, edge_features)
+
+    model = load_graphVCI(graph_data, args, state_dict)
 
     return model, datasets
 
 
-def train(anndata, args):
+def train(anndata, graph_data, args):
     """
     Trains a graphVCI model
     """
     if args["seed"] is not None:
         torch.manual_seed(args["seed"])
 
-    model, datasets = prepare(anndata, args, args['covariate_keys'])
+    model, datasets = prepare(anndata, graph_data, args, args['covariate_keys'])
 
     datasets.update(
         {
@@ -64,6 +79,7 @@ def train(anndata, args):
     dt = datetime.now().strftime("%Y.%m.%d_%H:%M:%S")
     writer = SummaryWriter(log_dir=os.path.join(args["artifact_path"], "runs/" + args["name"] + "_" + dt))
     save_dir = os.path.join(args["artifact_path"], "saves/" + args["name"] + "_" + dt)
+    print(f'{save_dir = }')
     os.makedirs(save_dir, exist_ok=True)
 
     initialize_logger(save_dir)
@@ -73,6 +89,7 @@ def train(anndata, args):
 
     start_time = time.time()
     for epoch in range(args["max_epochs"]):
+        print(f'{epoch = }')
         epoch_training_stats = defaultdict(float)
 
         for data in datasets["loader_tr"]:
@@ -134,6 +151,7 @@ def train(anndata, args):
             for key, val in epoch_training_stats.items():
                 writer.add_scalar(key, val, epoch)
 
+            print("Saving Model")
             torch.save(
                 (model.state_dict(), args, model.history),
                 os.path.join(
