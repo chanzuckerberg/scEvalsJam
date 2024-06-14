@@ -12,6 +12,7 @@ Date: June 13, 2024
 import numpy as np
 from sklearn.metrics import adjusted_rand_score, f1_score, normalized_mutual_info_score, fowlkes_mallows_score
 from sklearn.cluster import KMeans
+from scipy import sparse
 from pertpy.tools._distances._distances import AbstractDistance
 import pertpy as pt
 from typing import Union
@@ -177,7 +178,8 @@ def calc_metrics(anndata_x: ad.AnnData,
                  metric_dict: dict,
                  de_genes_gt = None,
                  de_genes_pred = None,
-                 de_subset = None
+                 de_subset = None,
+                 top_k = 20
                 ) -> list:
     
     """
@@ -190,7 +192,10 @@ def calc_metrics(anndata_x: ad.AnnData,
         Assumes both AnnData objects were normalised appropriately.
     anndata_y:
         AnnData object containing predicted cells. Data in .X should be sparse.csr_matrix. 
-        Assumes both AnnData objects were normalised appropriately.   
+        Assumes both AnnData objects were normalised appropriately.  
+    anndata_control:
+        Either NaN or an AnnData object that represents control expression. 
+        If an AnnData object is provided the metrics will be calculated on the expression change between perturbation/prediction and control.
     pert:
         String indicating which perturbation to calculate metrics for from 'perturbation_name' key.
     metric_dict:
@@ -201,12 +206,11 @@ def calc_metrics(anndata_x: ad.AnnData,
     de_genes_pred:
         Either a dictionary of pre-computed DE genes {"de_up":lst, "de_dn":lst} for 
         control vs predicted or an AnnData object indicated control expression.
-    expression_change:
-        Either NaN or an AnnData object that represents control expression. 
-        If an AnnData object is provided the metrics will be calculated on the expression change between perturbation/prediction and control.
     de_subset:
         Either NaN or a string (one of "de_up" or "de_dn"). 
         If a string is provided the input anndata objects will be subset to either the up- or -downregulated genes before calculating metrics.
+    top_k:
+        Integer indicating number of genes to select
     """
     
     ## Check input
@@ -217,14 +221,14 @@ def calc_metrics(anndata_x: ad.AnnData,
     
     ## If no DE genes are provided, calculate them
     if de_genes_gt is None:
-        de_genes_gt = get_de_genes(de_genes_gt, anndata_x,
+        de_genes_gt = get_de_genes(anndata_control, anndata_x,
                            method = "wilcoxon",
-                           top_k = 100,
+                           top_k = top_k,
                            groupby_key = 'perturbation_name')
     if de_genes_pred is None:
-        de_genes_pred = get_de_genes(de_genes_pred, anndata_y,
+        de_genes_pred = get_de_genes(anndata_control, anndata_y,
                            method = "wilcoxon",
-                           top_k = 100,
+                           top_k = top_k,
                            groupby_key = 'perturbation_name')
     
     ## Select data from relevant perturbation
