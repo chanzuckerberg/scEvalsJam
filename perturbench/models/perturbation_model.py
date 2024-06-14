@@ -1,9 +1,12 @@
+import sys
+sys.path.append('/Workspace/Users/lm25@sanger.ac.uk/scEvalsJam')
 from abc import ABC, abstractmethod
 import scipy as sp
 import pathlib
 import torch
+import perturbench
 
-from perturbevals.dataset import PerturbationDataset
+from perturbench.dataset import PerturbationDataset
 
 
 class PerturbationModel(ABC):
@@ -11,6 +14,7 @@ class PerturbationModel(ABC):
 
     @abstractmethod
     def __init__(self, device: torch.cuda.device, **kwargs) -> None:
+        print('initiated')
         pass
 
     @abstractmethod
