@@ -32,7 +32,7 @@ class BhattacharyyaDistance(AbstractDistance):
     def __call__(self, X: np.ndarray, Y: np.ndarray, **kwargs) -> float:
         
         def softmax(x):
-            return(np.exp(x)/np.exp(x).sum())
+            return(np.exp(x)/np.exp(x).sum(axis=1, keepdims=True))
         
         # TODO: check if this is the correct way to calculate the Bhattacharyya distance
         X = softmax(X)
