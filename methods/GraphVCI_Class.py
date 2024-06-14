@@ -84,7 +84,7 @@ class GraphVCI_ABC:
         graph_path = None
         train_model(anndata, graph_path, args=model_kws)
 
-    def eval(self, anndata, perts, graph_path=None, model=None):
+    def eval(self, anndata, perts, model=None):
         if self.model is None and model is None:
             raise ValueError("Model not trained yet")
 
@@ -150,4 +150,4 @@ if __name__ == "__main__":
     # gcvi.train(anndata)
 
     model_save = torch.load("/home/maccyz/Documents/scEvalsJam/methods/artifacts2/saves/default_run_2024.06.14_16:12:13/model_seed=None_epoch=0.pt")
-    gcvi.eval(_anndata, "control", None, model_save)
+    gcvi.eval(_anndata, "control", model_save)
