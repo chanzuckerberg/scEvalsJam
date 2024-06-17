@@ -1,0 +1,2 @@
+val/IWELBO,best_checkpoint_path
+-1932.446,/lustre/scratch126/cellgen/team298/vm11/LEARN/scEvalsJam/sams-vae/results/results/sams_vae_replogle/checkpoints/best-epoch=167-step=9744-val_loss=1941.58.ckpt

@@ -1,0 +1,93 @@
+program: train.py
+method: grid
+name: sams_vae_mean_field
+project: exp008_sams_vae_norman_ood
+metric:
+  name: val/IWELBO
+  goal: maximize
+parameters:
+  # Experiment hyperparameters
+  seed:
+    value: 0
+  max_steps:
+    value: 30000
+  gradient_clip_norm:
+    value: 100
+
+  # Data module class + hyperparameters
+  data_module:
+    value: NormanOODCombinationDataModule
+  data_module_kwargs.frac_combinations_train:
+    values:
+      - 0
+      - 0.25
+      - 0.5
+      - 0.75
+      - 1
+  data_module_kwargs.frac_combinations_test:
+    value: 0.25
+  data_module_kwargs.split_seed:
+    values:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+  data_module_kwargs.batch_size:
+    value: 512
+  data_module_kwargs.highly_variable_genes_only:
+    value: True
+  data_module_kwargs.encode_combos_as_unique:
+    values:
+      - True
+      - False
+
+  # wandb does not provide mechanism to define dependent variables
+  # in order to tie the value of multiple variables together,
+  # we will preprocess the config to split variables separated by "--"
+  # and use the same values for each
+  model_kwargs.n_latent--guide_kwargs.n_latent:
+    value: 200
+  model_kwargs.decoder_n_layers--guide_kwargs.basal_encoder_n_layers:
+    values:
+      - 1
+      - 2
+      - 4
+
+  # Model class + hyperparameters
+  model:
+    value: SAMSVAEModel
+  model_kwargs.mask_prior_prob:
+    value: 0.01
+  model_kwargs.embedding_prior_scale:
+    value: 1
+  model_kwargs.likelihood_key:
+    value: library_nb
+  model_kwargs.decoder_n_hidden:
+    value: 400
+
+  # Guide class + hyperparameters
+  guide:
+    value: SAMSVAEMeanFieldNormalGuide
+  guide_kwargs.basal_encoder_n_hidden:
+    value: 400
+  guide_kwargs.basal_encoder_input_normalization:
+    value: log_standardize
+  guide_kwargs.mean_field_encoder:
+    values:
+      - True
+      - False
+
+  # Loss module class + hyperparameters
+  loss_module:
+    value: SAMSVAE_ELBOLossModule
+
+  # Lightning module hyperparameters
+  lightning_module_kwargs.lr:
+    value: 0.0003
+  lightning_module_kwargs.n_particles:
+    value: 5
+
+  # Predictor class + hyperparameters (used to evaluation)
+  predictor:
+    value: SAMSVAEPredictor

@@ -1,0 +1,26 @@
+name: sams_vae
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - anndata
+  - awscli>=2.0
+  - jupyter
+  - leidenalg
+  - numpy
+  - pandas
+  - pyarrow
+  - pyro-ppl
+  - pytest
+  - python=3.9.*
+  - pytorch
+  - pytorch-lightning
+  - redun
+  - scanpy
+  - scipy
+  - scikit-learn
+  - seaborn
+  - wandb

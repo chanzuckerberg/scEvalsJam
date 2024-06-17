@@ -1,0 +1,67 @@
+program: train.py
+method: grid
+name: conditional_vae
+project: exp006_replogle_filtered_2
+metric:
+  name: val/IWELBO
+  goal: maximize
+parameters:
+  # Experiment hyperparameters
+  seed:
+    values:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+  max_steps:
+    value: 150000
+
+  # Data module class + hyperparameters
+  data_module:
+    value: ReplogleDataModule
+  data_module_kwargs.data_key:
+    value: K562_genome_wide_filtered
+  data_module_kwargs.batch_size:
+    value: 512
+
+  # wandb does not provide mechanism to define dependent variables
+  # in order to tie the value of multiple variables together,
+  # we will preprocess the config to split variables separated by "--"
+  # and use the same values for each
+  model_kwargs.n_latent--guide_kwargs.n_latent:
+    values:
+      - 100
+      - 200
+  model_kwargs.decoder_n_layers--guide_kwargs.encoder_n_layers:
+    value: 1
+
+  # Model class + hyperparameters
+  model:
+    value: ConditionalVAEModel
+  model_kwargs.likelihood_key:
+    value: library_nb
+  model_kwargs.decoder_n_hidden:
+    value: 400
+
+  # Guide class + hyperparameters
+  guide:
+    value: ConditionalVAEGuide
+  guide_kwargs.encoder_n_hidden:
+    value: 400
+  guide_kwargs.encoder_input_normalization:
+    value: log_standardize
+
+  # Loss module class + hyperparameters
+  loss_module:
+    value: ConditionalVAE_ELBOLossModule
+
+  # Lightning module hyperparameters
+  lightning_module_kwargs.lr:
+    value: 0.0003
+  lightning_module_kwargs.n_particles:
+    value: 5
+
+  # Predictor class + hyperparameters (used to evaluation)
+  predictor:
+    value: ConditionalVAEPredictor

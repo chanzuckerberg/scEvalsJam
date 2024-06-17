@@ -1,0 +1,87 @@
+program: train.py
+method: grid
+name: svae_plus
+project: norman_data_efficiency
+metric:
+  name: val/IWELBO
+  goal: maximize
+parameters:
+  # Experiment hyperparameters
+  seed:
+    value: 0
+  max_steps:
+    value: 30000
+  gradient_clip_norm:
+    value: 100
+
+  # Data module class + hyperparameters
+  data_module:
+    value: NormanDataEfficiencyDataModule
+  data_module_kwargs.frac_combination_cells_train:
+    values:
+      - 0
+      - 0.25
+      - 0.5
+      - 0.75
+      - 1
+  data_module_kwargs.split_seed:
+    values:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+  data_module_kwargs.batch_size:
+    value: 512
+  data_module_kwargs.highly_variable_genes_only:
+    value: True
+  data_module_kwargs.encode_combos_as_unique:
+    value: True
+
+  # wandb does not provide mechanism to define dependent variables
+  # in order to tie the value of multiple variables together,
+  # we will preprocess the config to split variables separated by "--"
+  # and use the same values for each
+  model_kwargs.n_latent--guide_kwargs.n_latent:
+    value: 200
+  model_kwargs.decoder_n_layers--guide_kwargs.encoder_n_layers:
+    values:
+      - 1
+      - 2
+      - 4
+
+  # Model class + hyperparameters
+  model:
+    value: SVAEPlusModel
+  model_kwargs.mask_beta_concentration_1:
+    value: 1
+  model_kwargs.mask_beta_concentration_2:
+    value: 2
+  model_kwargs.likelihood_key:
+    value: library_nb
+  model_kwargs.decoder_n_hidden:
+    value: 400
+
+  # Guide class + hyperparameters
+  guide:
+    value: SVAEPlusGuide
+  guide_kwargs.mask_init_logits:
+    value: 0
+  guide_kwargs.encoder_n_hidden:
+    value: 400
+  guide_kwargs.encoder_input_normalization:
+    value: log_standardize
+
+  # Loss module class + hyperparameters
+  loss_module:
+    value: SVAEPlus_ELBOLossModule
+
+  # Lightning module hyperparameters
+  lightning_module_kwargs.lr:
+    value: 0.0003
+  lightning_module_kwargs.n_particles:
+    value: 5
+
+  # Predictor class + hyperparameters (used to evaluation)
+  predictor:
+    value: SVAEPlusPredictor

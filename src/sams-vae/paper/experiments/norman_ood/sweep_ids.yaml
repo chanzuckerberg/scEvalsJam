@@ -1,0 +1,6 @@
+# Fill in wandb sweep IDs below (eg {user}/exp008_sams_vae_norman_ood/{id})
+sams_vae_mean_field:
+sams_vae_correlated:
+cpa_vae:
+svae+:
+conditional_vae:

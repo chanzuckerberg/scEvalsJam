@@ -1,0 +1,8 @@
+LICENSE
+README.md
+pyproject.toml
+setup.cfg
+sams_vae.egg-info/PKG-INFO
+sams_vae.egg-info/SOURCES.txt
+sams_vae.egg-info/dependency_links.txt
+sams_vae.egg-info/top_level.txt
