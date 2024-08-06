@@ -1,7 +1,9 @@
 import torch 
 import os
+from scipy import sparse
 import pathlib
 from gears import PertData, GEARS
+import numpy as np
 import scanpy as sc
 from perturbench import PerturbationModel
 from perturbench import PerturbationDataset
@@ -40,6 +42,10 @@ class GearsModel(PerturbationModel):
             sc.pp.log1p(anndata)
             sc.pp.highly_variable_genes(anndata,n_top_genes=5000, subset=True)
         
+        
+        anndata.obs['condition']  = anndata.obs['perturbation_name'].apply(lambda x : x +"+ctrl" if x!='control' else 'ctrl')
+        anndata.var['gene_name'] = list(anndata.var.index)
+        anndata.obs['cell_type'] = 'A549'
         
 
         # prepare data
@@ -132,7 +138,18 @@ class GearsModel(PerturbationModel):
         if self.model is None:
             raise ValueError("the GEARS model is not defined")
         
-        return self.model.predict(perturbation)
+        predict_dict = self.model.predict([[p] for p in perturbation])
+        
+        predict_ay = np.vstack(list(predict_dict.values())) # stack by pertubation at the first axis
+        predict_csr = sparse.csr_matrix(predict_ay)
+
+        # convert to adata
+
+        # where is the ground true?
+        ground_true = self.pert_data.anndata
+        
+        
+        return 
         
     
     def save(self, path: pathlib.Path) -> pathlib.Path:
@@ -146,7 +163,8 @@ class GearsModel(PerturbationModel):
         except NameError:
             
             print("Gears is a graph neural network that requires the dataset to initialize the model")
-            print("Please run `model.load_data` method firsts")
+            print("Please run model.load_data(split_mode, dataset_kws) method first if you have create the pert_data before")
+            print("Ohterwise run model.create_pertdata(anndata, split_mode, dataset_kws) method")
 
 
         # define grears with pert_data
@@ -155,7 +173,7 @@ class GearsModel(PerturbationModel):
                     proj_name = 'pertnet', 
                     exp_name = 'pertnet')
         
-        gears_model.load(path)
+        gears_model.load_pretrained(path)
 
         self.model = gears_model
 
