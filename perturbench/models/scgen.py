@@ -33,6 +33,8 @@ class ScGenModel(PerturbationModel):
         self.train_params = None
         self.trained = False
         self.model_name = 'scGen'
+        self.pred = None
+        self.delta = None
 
         # Preprocess adata
         scgen.SCGEN.setup_anndata(
@@ -89,6 +91,9 @@ class ScGenModel(PerturbationModel):
         )
         pred.obs['condition'] = 'pred'
         assert pred.shape[0] == self.adata_test.shape[0]
+        
+        self.pred = pred
+        self.delta = delta
 
         return pred, delta
 
