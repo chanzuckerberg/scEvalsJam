@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from perturbench.dataset import PerturbationDataset
+from dataset import PerturbationDataset
 
 
 class PerturbationMetric(ABC):
