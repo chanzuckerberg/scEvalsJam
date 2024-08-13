@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 
 class Scenario(ABC):
     """Responsible for running an evaluation scenario.py"""

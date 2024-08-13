@@ -4,9 +4,11 @@ from scipy import sparse
 import pathlib
 from gears import PertData, GEARS
 import numpy as np
+import pandas as pd
 import scanpy as sc
 from perturbench import PerturbationModel
 from perturbench import PerturbationDataset
+from anndata import AnnData
 
 
 class GearsModel(PerturbationModel):
@@ -133,28 +135,47 @@ class GearsModel(PerturbationModel):
         """
         predict the 
 
+        Arguments
+        ---------
+        A list of gene symbols
 
+        Examples
+        --------
+        >>> pert_genes = np.random.choice(model.model.pert_list, (10,)) 
+        >>> pert_ad = model.predict(pert_genes)
         """
         if self.model is None:
             raise ValueError("the GEARS model is not defined")
         
-        predict_dict = self.model.predict([[p] for p in perturbation])
+        solid_perturbation = []
+        for p in perturbation:
+            if p not in self.model.model.pert_list:
+                print(f"Gene {p} is not in Perturb Graph, will be ignored")
+            else:
+                solid_perturbation.append([p])
+
+
+        predict_dict = self.model.predict(solid_perturbation)
+        obs = pd.DataFrame(perturbation, columns=['perturbation'])
+        obs['cell_type'] = self.pert_data.adata.obs['cell_type']
+
         
         predict_ay = np.vstack(list(predict_dict.values())) # stack by pertubation at the first axis
         predict_csr = sparse.csr_matrix(predict_ay)
 
         # convert to adata
-
-        # where is the ground true?
-        ground_true = self.pert_data.anndata
+        var = self.pert_data.adata.var.copy()
+        predict_ad = AnnData(
+            X = predict_csr,
+            obs = obs,
+            var = var
+        )
         
-        
-        return 
+        return predict_ad
         
     
     def save(self, path: pathlib.Path) -> pathlib.Path:
         self.model.save_model(path)
-        return 
 
     def load(self, path: pathlib.Path, device:str = 'cuda:0') -> None:
 
