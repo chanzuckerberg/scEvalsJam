@@ -1,1 +1,0 @@
-from method_transform import MethodTransform

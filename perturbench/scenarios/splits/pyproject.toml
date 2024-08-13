@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "train-test-split"
+version = "0.1.0"
+description = ""
+authors = ["hsmaan <hassaan.maan@mail.utoronto.ca>"]
+readme = "README.md"
+packages = [{include = "train_test_split"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pandas = "^2.2.2"
+numpy = "^1.26.4"
+scanpy = "^1.10.1"
+anndata = "^0.10.7"
+torch = "^2.3.1"
+pyyaml = "^6.0.1"
+openpyxl = "^3.1.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

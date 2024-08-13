@@ -6,8 +6,8 @@ from typing import List
 import uuid
 import os
 
-from perturbench.models import PerturbationModel
-from perturbench.dataset import PerturbationDataset
+from models.model import PerturbationModel
+from dataset import PerturbationDataset
 
 
 class RandomModel(PerturbationModel):
@@ -15,11 +15,13 @@ class RandomModel(PerturbationModel):
     def __init__(self, device: torch.cuda.device, **kwargs) -> None:
         self.kwargs = kwargs
         self.device = device
-        self.model = "initialised!"
+        self.model = "initialised"
+        self.trained = False
         pass
 
     def train(self, data: PerturbationDataset) -> None:
-        self.model = "trained!"
+        self.model = "trained"
+        self.trained = True
 
     def predict(self, data: PerturbationDataset, perturbation: List[str]) -> sp.sparse.csr_matrix:
         raw_data = data.raw_counts()
