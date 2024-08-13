@@ -1,7 +1,8 @@
 from typing import List
 
-from perturbench.models import PerturbationModel
-from perturbench.dataset import PerturbationDataset
+from models.model import PerturbationModel
+from dataset import PerturbationDataset
+from metrics import PerturbationMetric
 
 
 class PerturbationBenchmark:
@@ -9,7 +10,7 @@ class PerturbationBenchmark:
 
     def __init__(self,
                  models: List[PerturbationModel] = [],
-                 datasets: List[PerturbationDataset] = [],
+                 train_test_dict: dict = {},
                  metric: List[str] = ['r2', 'mse', 'mae'],
                  gene_subset: List[str] = ['all_genes'],
                  **kwargs):
@@ -24,49 +25,58 @@ class PerturbationBenchmark:
             List of gene subsets to compare.
         """
         self.models = models
-        self.datasets = datasets
-        pass
+        self.train_test_dict = train_test_dict
     
     def add_model(self, PerturbationModel):
         """Add a model to the list of perturbation benchmark"""
 
         self.models.append(PerturbationModel)
 
-        pass
+        return
     
-    def add_data(self, PerturbationDataset):
-        """Add a dataset to the list of perturbation benchmark"""
-        ## Check this with data module
-        
-        pass
-    
-    def train(self, train_data: PerturbationDataset):
+    def add_dataset(self, train_test_dict):
+        """Add a pair of train and test PerturbationDataset dataset 
+        to the perturbation benchmark class"""
+
+        ## TODO: Check this with data module
+        # self.datasets.append(PerturbationDataset)
+        self.train_test_dict = train_test_dict
+
+        return
+
+    def train(self):
         """Train each model in the list of perturbation benchmark"""
 
         for model in self.models:
-            model.train(train_data)
+            model.train(self.train_test_dict['train'])
             model.istrained = True
-            print(f"Model {model.model_name} is trained successfully")
+            print(f"Model {model.model_name} training completed successfully")
 
-        pass
+        return
     
-    def predict(self, test_data: PerturbationDataset, perturbation: List[str]):
-        """Predict each model in the list of perturbation benchmark"""
+    def predict(self, pertturbation_list = []):
+        """Predict each model in the self.models list on self.train_test_dict['test'] data"""
 
         for model in self.models:
-            model.predict(test_data, perturbation)
-            print(f"Model {model.model_name} is predicted successfully")
+            model.predict(self.train_test_dict['test'],
+                          pertturbation_list)
+            print(f"Model {model.model_name} prediction completed successfully")
 
-        pass
+        return
     
-    def calculate_metrics(self):
+    def calculate_metrics(self, adata_test, control_label = 'control', 
+                          ground_truth_label = 'ground_truth',
+                          pred_label = 'stimulated',
+                          condition_label = 'condition',
+                          deg_count = 100):
         """Calculate metrics for each model in the list of perturbation benchmark"""
 
         for model in self.models:
-            model.calculate_metrics()
+            
+            # model.calculate_metrics()
             print(f"Model {model.model_name} metrics are calculated successfully")
 
-        pass
+        return
     
     def run(self):
         """Run the training, prediction and metric calculation for each
@@ -75,13 +85,13 @@ class PerturbationBenchmark:
         ## data processing and split to train/test TODO: implement this
         
         ## train all models
-        self.train(train_data)
+        self.train(self.train_test_dict['train'])
         
         ## predict all models
-        self.predict(test_data, perturbation)
+        self.predict(self.train_test_dict['test'], self.test_perturbation_list)
             
         ## calculate metrics
         self.calculate_metrics()
-        pass
+        return
     
     
