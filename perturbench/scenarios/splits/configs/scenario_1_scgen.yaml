@@ -5,7 +5,7 @@ val_size: 0.3
 scenario_name: Scenario 1 scGen
 train_dataset: Train1
 test_dataset: Test1
-perturbation_key: perturbation
+perturbation_key: condition
 cell_type_key: cell_type
 min_cells: 25
 seed: 0

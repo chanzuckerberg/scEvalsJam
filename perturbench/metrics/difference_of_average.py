@@ -1,6 +1,6 @@
 
-from perturbench.metrics import PerturbationMetric
-from perturbench.dataset import PerturbationDataset
+from metrics.metric import PerturbationMetric
+from dataset import PerturbationDataset
 import numpy as np
 
 

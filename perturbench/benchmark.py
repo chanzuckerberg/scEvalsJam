@@ -1,7 +1,14 @@
+from scipy import sparse
 from typing import List
+from tqdm import tqdm
+import scipy as sp
 
-from perturbench.models import PerturbationModel
-from perturbench.dataset import PerturbationDataset
+from models.model import PerturbationModel
+from dataset import PerturbationDataset
+# from metrics import PerturbationMetric
+from metrics.de import *
+from metrics.compute_metrics import calc_metrics, metric_dict
+
 
 
 class PerturbationBenchmark:
@@ -9,7 +16,7 @@ class PerturbationBenchmark:
 
     def __init__(self,
                  models: List[PerturbationModel] = [],
-                 datasets: List[PerturbationDataset] = [],
+                 train_test_dict: dict = {},
                  metric: List[str] = ['r2', 'mse', 'mae'],
                  gene_subset: List[str] = ['all_genes'],
                  **kwargs):
@@ -24,49 +31,117 @@ class PerturbationBenchmark:
             List of gene subsets to compare.
         """
         self.models = models
-        self.datasets = datasets
-        pass
+        self.train_test_dict = train_test_dict
     
     def add_model(self, PerturbationModel):
         """Add a model to the list of perturbation benchmark"""
 
         self.models.append(PerturbationModel)
 
-        pass
+        return
     
-    def add_data(self, PerturbationDataset):
-        """Add a dataset to the list of perturbation benchmark"""
-        ## Check this with data module
-        
-        pass
-    
-    def train(self, train_data: PerturbationDataset):
+    def add_dataset(self, train_test_dict):
+        """Add a pair of train and test PerturbationDataset dataset 
+        to the perturbation benchmark class"""
+
+        ## TODO: Check this with data module
+        # self.datasets.append(PerturbationDataset)
+        self.train_test_dict = train_test_dict
+
+        return
+
+    def train(self):
         """Train each model in the list of perturbation benchmark"""
 
         for model in self.models:
-            model.train(train_data)
+            model.train(self.train_test_dict['train'])
             model.istrained = True
-            print(f"Model {model.model_name} is trained successfully")
+            print(f"Model {model.model_name} training completed successfully")
 
-        pass
+        return
     
-    def predict(self, test_data: PerturbationDataset, perturbation: List[str]):
-        """Predict each model in the list of perturbation benchmark"""
+    def predict(self, pertturbation_list = []):
+        """Predict each model in the self.models list on self.train_test_dict['test'] data"""
 
         for model in self.models:
-            model.predict(test_data, perturbation)
-            print(f"Model {model.model_name} is predicted successfully")
+            model.predict(self.train_test_dict['test'],
+                          pertturbation_list)
+            print(f"Model {model.model_name} prediction completed successfully")
 
-        pass
+        return
     
-    def calculate_metrics(self):
-        """Calculate metrics for each model in the list of perturbation benchmark"""
+    def calculate_metrics(self, adata_test,
+                          control_label = 'control', 
+                          target_pert_list = [],
+                          condition_label = 'condition',
+                          deg_count = 100):
+        """Calculate metrics for each model in the list of perturbation benchmark
+        
+        :param adata_test:
+            Anndata object of the test dataset, assumed to contain test cell groups
+        :param control_label:
+            Label of the control condition
+        :param target_pert_list:
+            List of target perturbations to compare
+        :param condition_label:
+            Label of the condition column in the adata object
+        :param deg_count:
+            Number of DEGs to consider
+        
+        """
+        # TODO: check this function and test it - the code is updated version of the code example provided in metrics_demo.ipynb
+        print("type of adata_test.X", type(adata_test.X))
+        print(type(adata_test.X.toarray()))
+        adata_test.X = sp.sparse.csr_matrix(adata_test.X.toarray())
+        
+        if target_pert_list == []:
+            target_pert_list = adata_test.obs[condition_label].unique()
+            # remove control_label from the list
+            target_pert_list = [x for x in target_pert_list if x != control_label]
+        
+        adata_control = adata_test[adata_test.obs[condition_label] == control_label]
+        adata_ground_truth = adata_test[adata_test.obs[condition_label].isin(target_pert_list)]
+        
+        # Run DE analysis
+        de_genes_gt = get_de_genes(
+            adata_control,
+            adata_ground_truth,
+            method = "wilcoxon",
+            top_k = deg_count,
+            groupby_key = condition_label)
 
         for model in self.models:
-            model.calculate_metrics()
+
+            de_genes_pred = get_de_genes(
+                adata_control,
+                model.adata_pred,
+                method = "wilcoxon",
+                top_k = deg_count,
+                groupby_key = condition_label)
+            
+            ### --- Calculate metrics per scenario
+            unique_perturbations = adata_test.obs[condition_label].unique()
+
+            ## Calculate metrics
+            results_list = [calc_metrics(
+                adata_ground_truth, model.adata_pred, adata_control,
+                pert, metric_dict, de_genes_gt, de_genes_pred,
+                de_subset = None) for pert in tqdm(unique_perturbations)]
+            ## Build dataframe
+            results_df = pd.DataFrame(
+                results_list,
+                index=[i for i in unique_perturbations],
+                columns=list(metric_dict.keys())+["Jaccard_de_up", "Jaccard_de_dn"])
+
+            ## Remove redundant metrics
+            redundant_column_mask = results_df.columns.str.contains('ec') & results_df.columns.str.contains('mse|mae|euclidean_distance|bhattacharyya_distance')
+            results_df = results_df.loc[:, ~redundant_column_mask]
+            
+            # model.calculate_metrics()
+            print(results_df)
             print(f"Model {model.model_name} metrics are calculated successfully")
 
-        pass
+        return
     
     def run(self):
         """Run the training, prediction and metric calculation for each
@@ -75,13 +150,13 @@ class PerturbationBenchmark:
         ## data processing and split to train/test TODO: implement this
         
         ## train all models
-        self.train(train_data)
+        self.train(self.train_test_dict['train'])
         
         ## predict all models
-        self.predict(test_data, perturbation)
+        self.predict(self.train_test_dict['test'], self.test_perturbation_list)
             
         ## calculate metrics
         self.calculate_metrics()
-        pass
+        return
     
     
