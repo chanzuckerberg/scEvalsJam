@@ -1,3 +1,4 @@
+from scipy import sparse
 from typing import List
 from tqdm import tqdm
 import scipy as sp
@@ -88,6 +89,7 @@ class PerturbationBenchmark:
             Number of DEGs to consider
         
         """
+        # TODO: check this function and test it - the code is updated version of the code example provided in metrics_demo.ipynb
         print("type of adata_test.X", type(adata_test.X))
         print(type(adata_test.X.toarray()))
         adata_test.X = sp.sparse.csr_matrix(adata_test.X.toarray())
